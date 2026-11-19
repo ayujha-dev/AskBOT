@@ -34,6 +34,42 @@ export class ComposerComponent {
       this.updateSendButtonState();
     });
 
+    // Handle direct paste inside composer textarea (screenshots, images, files)
+    this.textarea.addEventListener('paste', async (e) => {
+      const clipboard = e.clipboardData;
+      if (!clipboard) return;
+
+      const files = [];
+      if (clipboard.files && clipboard.files.length > 0) {
+        for (let i = 0; i < clipboard.files.length; i++) {
+          files.push(clipboard.files[i]);
+        }
+      }
+      if (clipboard.items && clipboard.items.length > 0) {
+        for (let i = 0; i < clipboard.items.length; i++) {
+          const item = clipboard.items[i];
+          if (item.kind === 'file') {
+            const file = item.getAsFile();
+            if (file && !files.some(f => f.name === file.name && f.size === file.size)) {
+              files.push(file);
+            }
+          }
+        }
+      }
+
+      if (files.length > 0 && this.fileManager) {
+        e.preventDefault();
+        await this.fileManager.handleFiles(files);
+        this.updateSendButtonState();
+      }
+    });
+
+    if (this.fileManager) {
+      this.fileManager.onAttachmentsChange = () => {
+        this.updateSendButtonState();
+      };
+    }
+
     // Keyboard enter-to-send
     this.textarea.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {

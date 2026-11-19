@@ -87,6 +87,11 @@ export class ClaudeProvider extends BaseProvider {
                 data: base64Data
               }
             });
+          } else if (att.type === 'video') {
+            content.push({
+              type: 'text',
+              text: `\n\n--- Attachment: ${att.name} (${att.mimeType || 'video/mp4'}) ---\n[Note: Direct video analysis is exclusively supported by Google Gemini]`
+            });
           } else if (att.type === 'text') {
             content.push({
               type: 'text',

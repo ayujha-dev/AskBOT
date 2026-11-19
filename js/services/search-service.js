@@ -184,4 +184,17 @@ export class SearchService {
 
     return deduped.slice(0, 5);
   }
+
+  /**
+   * Execute search and return both structured context and sources list.
+   * Helper method for test tools and callers needing both context and sources.
+   * @param {string} prompt
+   * @param {string} [tavilyApiKey]
+   * @returns {Promise<{ context: string, sources: Array<{ title: string, url: string, snippet: string }> }>}
+   */
+  static async executeSearch(prompt, tavilyApiKey = null) {
+    const sources = await this.search(prompt, { tavilyApiKey });
+    const context = this.formatSearchContext(sources);
+    return { context, sources };
+  }
 }

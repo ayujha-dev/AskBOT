@@ -17,6 +17,8 @@ test('Task 6: SearchService extracts clean query and formats search context', as
   assert.ok(formattedContext.includes('[1] SpaceX Mission'));
   assert.ok(formattedContext.includes('https://spacex.example.com'));
   assert.ok(formattedContext.includes('Starship flight test 7'));
+
+  assert.ok(typeof SearchService.executeSearch === 'function', 'executeSearch must be defined on SearchService');
 });
 
 test('Task 6: PyodideBridge extracts python blocks from markdown text', async () => {

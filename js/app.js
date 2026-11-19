@@ -386,6 +386,12 @@ class AppCoordinator {
 
     // 2. Extract attachments and clear tray
     const attachments = this.fileManager.getAttachments();
+    const hasVideo = attachments.some(a => a.type === 'video');
+    if (hasVideo && activeProvider !== 'gemini') {
+      alert(`Video analysis is currently supported natively by Google Gemini (Gemini 2.0 Flash / 1.5 Pro). Please switch your provider to Gemini in the top header or composer pill to analyze video clips.`);
+      return;
+    }
+
     this.fileManager.clear();
 
     // 3. Save user message to store

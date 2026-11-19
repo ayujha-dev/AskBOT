@@ -42,6 +42,9 @@ export class TokenCounter {
         if (att.type === 'image') {
           // Standard high-res vision tile heuristic (~800 - 1000 tokens)
           tokens += 800;
+        } else if (att.type === 'video') {
+          // Video clip heuristic (~2000 tokens)
+          tokens += 2000;
         } else if (att.type === 'text' && att.data) {
           tokens += this.estimateTokens(att.data) + 10;
         }

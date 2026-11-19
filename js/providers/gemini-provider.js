@@ -68,14 +68,14 @@ export class GeminiProvider extends BaseProvider {
 
       if (msg.attachments && msg.attachments.length > 0) {
         for (const att of msg.attachments) {
-          if (att.type === 'image') {
-            // Strip data:image/...;base64, header to leave pure base64
+          if (att.type === 'image' || att.type === 'video') {
+            // Strip data:image/...;base64, or data:video/...;base64, header to leave pure base64
             const base64Data = att.data.includes(';base64,')
               ? att.data.split(';base64,')[1]
               : att.data;
             parts.push({
               inlineData: {
-                mimeType: att.mimeType || 'image/png',
+                mimeType: att.mimeType || (att.type === 'video' ? 'video/mp4' : 'image/png'),
                 data: base64Data
               }
             });

@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Zero Build](https://img.shields.io/badge/Build-Zero%20Build%20(Pure%20ESM)-purple?style=flat-square)](#quickstart-zero-build)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)](#byok-privacy-guarantee)
-[![Tests](https://img.shields.io/badge/Tests-36%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
+[![Tests](https://img.shields.io/badge/Tests-39%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
 [![Live Demo on Vercel](https://img.shields.io/badge/Live%20Demo-askbot--rust.vercel.app-black?style=flat-square&logo=vercel)](https://askbot-rust.vercel.app)
 
 ---
@@ -175,7 +175,7 @@ node --test tests/*.test.js
 ```
 
 **Test Coverage Highlights:**
-- **36/36 Tests Passing** across all modules:
+- **39/39 Tests Passing** across all modules:
   - BaseProvider SSE chunk boundary buffering & tag extraction.
   - TokenCounter sliding window budget trimming and user turn preservation.
   - Pyodide WebAssembly code block extraction and worker timeout guards.
@@ -184,6 +184,7 @@ node --test tests/*.test.js
   - Output Navigation Rail turn counting and output target categorization.
   - Dynamic responsive background effects and glassmorphism design tokens.
   - Fast Model Switchers in composer and sidebar, search filtering, and editorial typography.
+  - Clipboard image/video pasting and Gemini native video multimodal processing.
 
 ---
 

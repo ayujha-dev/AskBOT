@@ -78,6 +78,11 @@ export class OpenAIProvider extends BaseProvider {
             type: 'image_url',
             image_url: { url: att.data }
           });
+        } else if (att.type === 'video') {
+          contentParts.push({
+            type: 'text',
+            text: `\n\n--- Attachment: ${att.name} (${att.mimeType || 'video/mp4'}) ---\n[Note: Direct video analysis is exclusively supported by Google Gemini]`
+          });
         } else if (att.type === 'text') {
           contentParts.push({
             type: 'text',
