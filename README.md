@@ -2,7 +2,6 @@
 
 > A refined, high-craft, client-side Multi-Provider AI chat application inspired by Google Gemini's aesthetic and Groq Playground's parameter controls. Built with pure **HTML5, CSS3, and Vanilla JavaScript (ES Modules)** — **Zero build step required**.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Zero Build](https://img.shields.io/badge/Build-Zero%20Build%20(Pure%20ESM)-purple?style=flat-square)](#quickstart-zero-build)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)](#byok-privacy-guarantee)
 [![Tests](https://img.shields.io/badge/Tests-39%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
@@ -191,7 +190,3 @@ node --test tests/*.test.js
 ## 👤 Author
 
 Crafted with care by **[ayujha-dev](https://github.com/ayujha-dev)**.
-
-## 📄 License
-
-Licensed under the [MIT License](LICENSE).
