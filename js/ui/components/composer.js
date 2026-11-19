@@ -3,10 +3,14 @@ import { store } from '../../state/store.js';
 export class ComposerComponent {
   constructor(options = {}) {
     this.onSend = options.onSend || (() => {});
+    this.onSelectModel = options.onSelectModel || (() => {});
     this.fileManager = options.fileManager || null;
 
     this.textarea = document.getElementById('composer-textarea');
     this.btnSend = document.getElementById('btn-send-message');
+
+    this.modelPill = document.getElementById('composer-model-pill');
+    this.modelName = document.getElementById('composer-model-name');
 
     this.toggleCode = document.getElementById('toggle-code-interpreter');
     this.toggleSearch = document.getElementById('toggle-web-search');
@@ -88,15 +92,38 @@ export class ComposerComponent {
       });
     }
 
-    // Subscribe to mode changes
+    // Model selector pill inside composer toolbar
+    if (this.modelPill) {
+      this.modelPill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onSelectModel(this.modelPill);
+      });
+    }
+
+    // Subscribe to mode and model changes
     store.subscribe((state, changedKeys) => {
       if (changedKeys.includes('modes')) {
         this.syncModesUI(state.modes);
       }
+      if (changedKeys.includes('selectedModel') || changedKeys.includes('activeProvider')) {
+        this.syncModelDisplay(state.selectedModel, state.activeProvider);
+      }
     });
 
     this.syncModesUI(store.getState().modes);
+    this.syncModelDisplay(store.getState().selectedModel, store.getState().activeProvider);
     this.updateSendButtonState();
+  }
+
+  syncModelDisplay(model = store.getState().selectedModel, provider = store.getState().activeProvider) {
+    if (this.modelName) {
+      if (model) {
+        this.modelName.textContent = model;
+        this.modelName.title = `${provider ? provider.toUpperCase() : 'AI'}: ${model}`;
+      } else {
+        this.modelName.textContent = 'Select Model';
+      }
+    }
   }
 
   syncModesUI(modes) {

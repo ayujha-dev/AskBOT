@@ -6,6 +6,7 @@ export class SidebarComponent {
     this.onSelectChat = options.onSelectChat || (() => {});
     this.onNewChat = options.onNewChat || (() => {});
     this.onOpenSettings = options.onOpenSettings || (() => {});
+    this.onSelectModel = options.onSelectModel || (() => {});
 
     this.sidebarEl = document.getElementById('sidebar');
     this.historyListEl = document.getElementById('chat-history-list');
@@ -23,7 +24,10 @@ export class SidebarComponent {
     this.activeModelLabel = document.getElementById('active-model-label');
     this.headerModelName = document.getElementById('header-model-name');
     this.sidebarProviderCard = document.getElementById('sidebar-provider-card');
+    this.searchInput = document.getElementById('sidebar-chat-search');
+    this.chatCountEl = document.getElementById('sidebar-chat-count');
 
+    this.searchQuery = '';
     this.init();
   }
 
@@ -76,8 +80,16 @@ export class SidebarComponent {
     }
 
     if (this.sidebarProviderCard) {
-      this.sidebarProviderCard.addEventListener('click', () => {
-        this.onOpenSettings();
+      this.sidebarProviderCard.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onSelectModel(this.sidebarProviderCard);
+      });
+    }
+
+    if (this.searchInput) {
+      this.searchInput.addEventListener('input', (e) => {
+        this.searchQuery = (e.target.value || '').trim().toLowerCase();
+        this.renderHistory();
       });
     }
 
@@ -140,19 +152,37 @@ export class SidebarComponent {
     if (!this.historyListEl) return;
 
     const { chats, currentChatId } = store.getState();
+    const chatList = chats || [];
+
+    if (this.chatCountEl) {
+      this.chatCountEl.textContent = chatList.length;
+    }
+
     this.historyListEl.innerHTML = '';
 
-    if (!chats || chats.length === 0) {
-      if (this.emptyNoticeEl) {
+    let displayedChats = chatList;
+    if (this.searchQuery) {
+      displayedChats = displayedChats.filter(chat =>
+        (chat.title || '').toLowerCase().includes(this.searchQuery)
+      );
+    }
+
+    if (displayedChats.length === 0) {
+      if (this.searchQuery) {
+        const searchNotice = document.createElement('div');
+        searchNotice.className = 'px-3 py-6 text-center text-xs text-[var(--text-muted)]';
+        searchNotice.textContent = `No conversations match "${this.searchQuery}".`;
+        this.historyListEl.appendChild(searchNotice);
+      } else if (this.emptyNoticeEl) {
         this.historyListEl.appendChild(this.emptyNoticeEl);
       }
       return;
     }
 
-    chats.forEach(chat => {
+    displayedChats.forEach(chat => {
       const isActive = chat.id === currentChatId;
       const item = document.createElement('div');
-      item.className = `group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer ui-transition ${
+      item.className = `chat-history-item group flex items-center justify-between px-3 py-2 rounded-xl text-xs cursor-pointer ui-transition ${
         isActive
           ? 'bg-[var(--surface-bg)] text-[var(--text-primary)] font-medium border border-[var(--surface-border)] shadow-sm'
           : 'text-[var(--text-secondary)] hover:bg-[var(--surface-panel-hover)] hover:text-[var(--text-primary)]'

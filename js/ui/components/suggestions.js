@@ -77,9 +77,37 @@ export class SuggestionsComponent {
     return shuffled.slice(0, count);
   }
 
-  render() {
+  render(animate = true) {
+    const greetingText = SuggestionsComponent.getGreeting();
+
     if (this.greetingHeading) {
-      this.greetingHeading.textContent = SuggestionsComponent.getGreeting();
+      if (animate && typeof window !== 'undefined' && typeof document !== 'undefined') {
+        this.greetingHeading.innerHTML = '';
+        const textSpan = document.createElement('span');
+        const cursorSpan = document.createElement('span');
+        cursorSpan.className = 'greeting-cursor';
+        this.greetingHeading.appendChild(textSpan);
+        this.greetingHeading.appendChild(cursorSpan);
+
+        let i = 0;
+        const charDelay = Math.max(25, Math.floor(450 / greetingText.length));
+        const typeNext = () => {
+          if (i < greetingText.length) {
+            textSpan.textContent += greetingText.charAt(i);
+            i++;
+            setTimeout(typeNext, charDelay);
+          } else {
+            setTimeout(() => {
+              if (cursorSpan && cursorSpan.parentElement) {
+                cursorSpan.style.opacity = '0.5';
+              }
+            }, 1000);
+          }
+        };
+        typeNext();
+      } else {
+        this.greetingHeading.textContent = greetingText;
+      }
     }
 
     if (!this.chipsGrid) return;
@@ -87,9 +115,10 @@ export class SuggestionsComponent {
 
     const suggestions = SuggestionsComponent.getRandomSuggestions(4);
 
-    suggestions.forEach(item => {
+    suggestions.forEach((item, idx) => {
       const card = document.createElement('div');
-      card.className = 'group p-3.5 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] hover:border-[var(--accent-blue)] cursor-pointer ui-transition shadow-sm flex flex-col justify-between';
+      card.className = 'suggestion-card-enter group p-3.5 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] hover:border-[var(--accent-blue)] cursor-pointer ui-spring shadow-sm flex flex-col justify-between';
+      card.style.animationDelay = `${idx * 70}ms`;
 
       card.innerHTML = `
         <div class="mb-2">

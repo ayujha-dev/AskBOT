@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Zero Build](https://img.shields.io/badge/Build-Zero%20Build%20(Pure%20ESM)-purple?style=flat-square)](#quickstart-zero-build)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)](#byok-privacy-guarantee)
-[![Tests](https://img.shields.io/badge/Tests-33%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
+[![Tests](https://img.shields.io/badge/Tests-36%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
 [![Live Demo on Vercel](https://img.shields.io/badge/Live%20Demo-askbot--rust.vercel.app-black?style=flat-square&logo=vercel)](https://askbot-rust.vercel.app)
 
 ---
@@ -46,9 +46,19 @@ Collapsible parameter drawer with live numeric readouts:
 
 ### 6. Cosmic Glassmorphism & Foggy Glass Runway
 - **Foggy Glass Panel (`.chat-fog-panel`)**: A dedicated frosted glass runway around the chat canvas providing crisp, high-contrast text legibility in both dark and light modes.
-- **Reactbits-Inspired Canvas Background**: 60fps dynamic ambient canvas rendering gentle floating aurora orbs and starlight dust particles responsive to pointer movement and theme switching.
+- **Harmonious Velvet Palette**: Calmed, synchronous cool twilight orb lighting (celestial indigo, periwinkle, whisper lavender) with zero harsh or jarring color contrasts.
 - **Intuitive 3-Tab Settings Modal**: Clean segmented controls for **AI Providers** (with active provider switcher and 1-click clipboard paste), **Web Grounding** (with live search test tool), and **Storage & Privacy** (with JSON conversation export and local storage stats).
 - **Authentic Chat History**: Zero dummy or mock conversations. History is populated purely by authentic user chats with automatic concise title generation.
+
+### 7. Fast Model Switching & Editorial Craft
+- **Multi-Location Model Switcher**: Change models seamlessly with one click from:
+  - **Composer Toolbar**: Bottom chat pill (`#composer-model-pill`) for instant switching without leaving the input field.
+  - **Sidebar Footer**: Interactive provider card with quick "Switch &rarr;" drawer trigger.
+  - **Top Header**: Central model badge (`#header-model-badge`).
+- **Real-Time Chat Filter & Counter**: Live filter search bar in the sidebar to search past conversations instantly, with an authentic count badge.
+- **Header Breadcrumbs & Token Gauge**: Live context budget tracker displaying active token estimations alongside current conversation breadcrumbs.
+- **Editorial Typography & Typewriter Entrance**: Google Fonts `Newsreader` serif typography for time-of-day greetings with a smooth typewriter entrance animation and blinking caret.
+- **Fluid Spring Micro-Interactions (`.ui-spring`)**: GPU-accelerated tactile feedback across all interactive buttons, cards, and drawers.
 
 ---
 
@@ -165,7 +175,7 @@ node --test tests/*.test.js
 ```
 
 **Test Coverage Highlights:**
-- **33/33 Tests Passing** across all modules:
+- **36/36 Tests Passing** across all modules:
   - BaseProvider SSE chunk boundary buffering & tag extraction.
   - TokenCounter sliding window budget trimming and user turn preservation.
   - Pyodide WebAssembly code block extraction and worker timeout guards.
@@ -173,6 +183,7 @@ node --test tests/*.test.js
   - Stored XSS defense validation via `dom.js`.
   - Output Navigation Rail turn counting and output target categorization.
   - Dynamic responsive background effects and glassmorphism design tokens.
+  - Fast Model Switchers in composer and sidebar, search filtering, and editorial typography.
 
 ---
 

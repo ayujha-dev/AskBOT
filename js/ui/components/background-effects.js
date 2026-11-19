@@ -64,53 +64,53 @@ export class BackgroundEffects {
     const width = this.canvas ? this.canvas.width : 1000;
     const height = this.canvas ? this.canvas.height : 800;
 
-    // 1. Radiant ambient orbs (soft blurred glowing color pools)
+    // 1. Radiant ambient orbs (harmonious, cohesive cool twilight spectrum)
     this.orbs = [
       {
         x: width * 0.2,
         y: height * 0.25,
         radius: Math.min(width, height) * 0.45,
-        colorDark: 'rgba(99, 102, 241, 0.09)', // Calming subtle Indigo
-        colorLight: 'rgba(99, 102, 241, 0.22)', // Vibrant ambient Indigo in light mode
-        vx: 0.2,
-        vy: 0.15,
+        colorDark: 'rgba(99, 102, 241, 0.06)', // Soft celestial indigo
+        colorLight: 'rgba(99, 102, 241, 0.12)', // Gentle mist indigo in light mode
+        vx: 0.16,
+        vy: 0.12,
         angle: 0
       },
       {
         x: width * 0.75,
         y: height * 0.35,
         radius: Math.min(width, height) * 0.48,
-        colorDark: 'rgba(56, 189, 248, 0.08)', // Gentle Azure
-        colorLight: 'rgba(14, 165, 233, 0.22)', // Crisp Sky Blue in light mode
-        vx: -0.18,
-        vy: 0.22,
+        colorDark: 'rgba(129, 140, 248, 0.05)', // Synchronized soft periwinkle
+        colorLight: 'rgba(129, 140, 248, 0.11)', // Soft periwinkle in light mode
+        vx: -0.14,
+        vy: 0.18,
         angle: Math.PI / 2
       },
       {
         x: width * 0.5,
         y: height * 0.8,
         radius: Math.min(width, height) * 0.46,
-        colorDark: 'rgba(168, 85, 247, 0.07)', // Muted Violet
-        colorLight: 'rgba(217, 70, 239, 0.16)', // Gentle Violet-Rose in light mode
-        vx: 0.14,
-        vy: -0.18,
+        colorDark: 'rgba(165, 180, 252, 0.04)', // Harmonious whisper lavender
+        colorLight: 'rgba(165, 180, 252, 0.09)', // Subtle atmospheric lavender in light mode
+        vx: 0.12,
+        vy: -0.15,
         angle: Math.PI
       }
     ];
 
     // 2. Subtle starlight dust particles
-    const particleCount = Math.min(38, Math.floor((width * height) / 32000));
+    const particleCount = Math.min(32, Math.floor((width * height) / 36000));
     this.particles = [];
 
     for (let i = 0; i < particleCount; i++) {
       this.particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: Math.random() * 1.8 + 0.6,
-        vx: (Math.random() - 0.5) * 0.22,
-        vy: (Math.random() - 0.5) * 0.22,
-        alpha: Math.random() * 0.4 + 0.1,
-        alphaSpeed: (Math.random() * 0.006 + 0.002) * (Math.random() > 0.5 ? 1 : -1)
+        size: Math.random() * 1.6 + 0.5,
+        vx: (Math.random() - 0.5) * 0.16,
+        vy: (Math.random() - 0.5) * 0.16,
+        alpha: Math.random() * 0.35 + 0.1,
+        alphaSpeed: (Math.random() * 0.005 + 0.002) * (Math.random() > 0.5 ? 1 : -1)
       });
     }
   }
@@ -194,8 +194,8 @@ export class BackgroundEffects {
       }
 
       ctx.fillStyle = this.isDark
-        ? `rgba(165, 180, 252, ${p.alpha * 0.45})`
-        : `rgba(79, 70, 229, ${p.alpha * 1.35})`;
+        ? `rgba(199, 210, 254, ${p.alpha * 0.35})`
+        : `rgba(100, 116, 139, ${p.alpha * 0.45})`;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

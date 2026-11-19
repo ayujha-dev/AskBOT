@@ -44,17 +44,26 @@ class AppCoordinator {
     this.sidebar = new SidebarComponent({
       onSelectChat: (id) => this.selectChat(id),
       onNewChat: () => this.startNewChat(),
-      onOpenSettings: () => this.settingsModal.open()
+      onOpenSettings: () => this.settingsModal.open(),
+      onSelectModel: (card) => this.showModelPickerDropdown(card, 'sidebar')
     });
 
     this.composer = new ComposerComponent({
       fileManager: this.fileManager,
-      onSend: (text) => this.handleSendMessage(text)
+      onSend: (text) => this.handleSendMessage(text),
+      onSelectModel: (pill) => this.showModelPickerDropdown(pill, 'top')
     });
 
-    // 2. Wire Header Model Picker Badge and Quick Mode Toggles
+    // 2. Wire Header Controls: Model Picker, New Chat, Mode Toggles
     this.wireHeaderModelPicker();
     this.wireHeaderModeButtons();
+
+    const headerNewChatBtn = document.getElementById('header-btn-new-chat');
+    if (headerNewChatBtn) {
+      headerNewChatBtn.addEventListener('click', () => {
+        this.startNewChat();
+      });
+    }
 
     // 3. Subscribe to store changes to keep conversation view in sync
     store.subscribe((state, changedKeys) => {
@@ -159,7 +168,7 @@ class AppCoordinator {
     syncHeaderButtons(store.getState().modes);
   }
 
-  showModelPickerDropdown(anchorEl) {
+  showModelPickerDropdown(anchorEl, placement = 'bottom') {
     let dropdown = document.getElementById('header-model-dropdown');
     if (dropdown) {
       dropdown.remove();
@@ -173,7 +182,15 @@ class AppCoordinator {
 
     dropdown = document.createElement('div');
     dropdown.id = 'header-model-dropdown';
-    dropdown.className = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 max-h-96 overflow-y-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-xl z-50 p-2 text-xs';
+
+    let positionClass = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72';
+    if (placement === 'top') {
+      positionClass = 'absolute bottom-full mb-2 left-0 w-72';
+    } else if (placement === 'sidebar') {
+      positionClass = 'absolute bottom-full mb-2 left-0 right-0 w-full';
+    }
+
+    dropdown.className = `${positionClass} max-h-96 overflow-y-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-xl z-50 p-2 text-xs`;
 
     // Provider Tabs
     const providers = ProviderRegistry.getSupportedProviders();
@@ -237,7 +254,7 @@ class AppCoordinator {
           selectedModel: nextModel
         });
         dropdown.remove();
-        this.showModelPickerDropdown(anchorEl);
+        this.showModelPickerDropdown(anchorEl, placement);
       });
     });
 
@@ -266,7 +283,7 @@ class AppCoordinator {
               selectedModel: fresh[0]?.id || selectedModel
             });
             dropdown.remove();
-            this.showModelPickerDropdown(anchorEl);
+            this.showModelPickerDropdown(anchorEl, placement);
           } catch (err) {
             alert(err.message);
             dropdown.remove();
@@ -298,6 +315,18 @@ class AppCoordinator {
     if (this.chatNavRail) {
       this.chatNavRail.update([]);
     }
+    this.suggestionsComponent.render(true);
+
+    const chatTitleEl = document.getElementById('header-chat-title');
+    if (chatTitleEl) {
+      chatTitleEl.textContent = 'New conversation';
+      chatTitleEl.title = 'New conversation';
+    }
+
+    const tokenCountEl = document.getElementById('header-token-count');
+    if (tokenCountEl) {
+      tokenCountEl.textContent = '0 tokens';
+    }
   }
 
   selectChat(chatId) {
@@ -310,6 +339,19 @@ class AppCoordinator {
     this.messagesComponent.render(messages);
     if (this.chatNavRail) {
       this.chatNavRail.update(messages);
+    }
+
+    const chatTitleEl = document.getElementById('header-chat-title');
+    if (chatTitleEl) {
+      const title = currentChat?.title || 'New conversation';
+      chatTitleEl.textContent = title;
+      chatTitleEl.title = title;
+    }
+
+    const tokenCountEl = document.getElementById('header-token-count');
+    if (tokenCountEl) {
+      const estTokens = TokenCounter.estimateMessagesTokens(messages);
+      tokenCountEl.textContent = `${estTokens.toLocaleString()} tokens`;
     }
   }
 

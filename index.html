@@ -52,13 +52,27 @@
   <aside id="sidebar" class="w-64 md:w-72 h-full flex flex-col flex-shrink-0 border-r border-[var(--surface-border)] glass-panel transition-all duration-200 z-30 relative">
     <!-- Sidebar Header -->
     <div class="p-3 flex items-center justify-between border-b border-[var(--surface-border)]">
-      <button id="btn-new-chat" class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-transition shadow-sm text-[var(--text-primary)]">
-        <svg class="w-4 h-4"><use href="#icon-plus"/></svg>
+      <button id="btn-new-chat" class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-spring shadow-sm text-[var(--text-primary)]">
+        <svg class="w-4 h-4 text-[var(--accent-blue)]"><use href="#icon-plus"/></svg>
         <span>New chat</span>
       </button>
-      <button id="btn-collapse-sidebar" class="ml-2 p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition md:flex hidden" title="Collapse sidebar">
+      <button id="btn-collapse-sidebar" class="ml-2 p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-spring md:flex hidden" title="Collapse sidebar">
         <svg class="w-4 h-4"><use href="#icon-chevron-down"/></svg>
       </button>
+    </div>
+
+    <!-- Quick Chat Search / Filter Input -->
+    <div class="px-3 pt-2.5 pb-1">
+      <div class="relative">
+        <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><use href="#icon-search"/></svg>
+        <input type="text" id="sidebar-chat-search" placeholder="Search chats..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none focus:border-[var(--accent-blue)] ui-transition">
+      </div>
+    </div>
+
+    <!-- Section Header with Real-time Count -->
+    <div class="px-3 pt-2 pb-1 flex items-center justify-between text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+      <span>Conversations</span>
+      <span id="sidebar-chat-count" class="px-1.5 py-0.5 rounded-full bg-[var(--surface-panel)] border border-[var(--surface-border)] font-mono text-[9px]">0</span>
     </div>
 
     <!-- Authentic Chat History List -->
@@ -71,22 +85,29 @@
 
     <!-- Sidebar Footer -->
     <div class="p-3 border-t border-[var(--surface-border)] flex flex-col gap-2">
-      <!-- Active Provider / Model Info Card -->
-      <div id="sidebar-provider-card" class="px-3 py-2 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] flex items-center justify-between cursor-pointer hover:border-[var(--accent-blue)] ui-transition">
-        <div class="flex flex-col min-w-0">
-          <span class="text-[10px] font-semibold tracking-wider uppercase text-[var(--text-muted)]" id="active-provider-label">GROQ</span>
-          <span class="text-xs font-medium text-[var(--text-primary)] truncate" id="active-model-label">Select Model...</span>
+      <!-- Active Provider / Model Info & Fast Changer Card -->
+      <div id="sidebar-provider-card" class="p-2.5 rounded-2xl bg-[var(--surface-panel)] border border-[var(--surface-border)] hover:border-[var(--accent-blue)] flex items-center justify-between cursor-pointer ui-spring group shadow-sm relative" title="Click to switch AI model">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-7 h-7 rounded-xl bg-[var(--surface-card)] border border-[var(--surface-border)] flex items-center justify-center text-[var(--accent-blue)] flex-shrink-0 group-hover:scale-105 ui-transition">
+            <svg class="w-3.5 h-3.5"><use href="#icon-sliders"/></svg>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-[9px] font-bold tracking-wider uppercase text-[var(--text-muted)]" id="active-provider-label">GROQ</span>
+            <span class="text-xs font-semibold text-[var(--text-primary)] truncate" id="active-model-label">Select Model...</span>
+          </div>
         </div>
-        <svg class="w-3.5 h-3.5 text-[var(--text-muted)]"><use href="#icon-chevron-down"/></svg>
+        <span class="text-[10px] text-[var(--accent-blue)] font-medium px-2 py-0.5 rounded-lg bg-[var(--accent-subtle)] flex items-center gap-0.5 group-hover:bg-[var(--accent-blue)] group-hover:text-white ui-transition">
+          Switch &rarr;
+        </span>
       </div>
 
       <!-- Settings & Theme Controls -->
       <div class="flex items-center justify-between pt-1">
-        <button id="btn-open-settings" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition">
+        <button id="btn-open-settings" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-spring">
           <svg class="w-4 h-4"><use href="#icon-gear"/></svg>
           <span>Settings</span>
         </button>
-        <button id="btn-theme-toggle" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition" title="Toggle dark/light mode">
+        <button id="btn-theme-toggle" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-spring" title="Toggle dark/light mode">
           <svg class="w-4 h-4 theme-icon-sun hidden"><use href="#icon-sun"/></svg>
           <svg class="w-4 h-4 theme-icon-moon"><use href="#icon-moon"/></svg>
         </button>
@@ -99,8 +120,8 @@
     
     <!-- Header -->
     <header id="app-header" class="h-14 flex items-center justify-between px-4 border-b border-[var(--surface-border)] glass-panel flex-shrink-0 z-20">
-      <div class="flex items-center gap-3">
-        <button id="btn-toggle-sidebar" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Toggle sidebar">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <button id="btn-toggle-sidebar" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-spring" title="Toggle sidebar">
           <svg class="w-5 h-5"><use href="#icon-sliders"/></svg>
         </button>
         
@@ -109,25 +130,33 @@
           <span class="w-2 h-2 rounded-full bg-[var(--accent-blue)]"></span>
           <span>made by ayujha-dev</span>
         </a>
+
+        <!-- Breadcrumb / Active Conversation Title -->
+        <span class="text-[var(--surface-border)] text-xs hidden sm:inline">/</span>
+        <span id="header-chat-title" class="text-xs font-medium text-[var(--text-muted)] truncate max-w-[130px] sm:max-w-[200px] hidden sm:inline ui-transition" title="Current conversation">
+          New conversation
+        </span>
       </div>
 
       <!-- Center Controls: Model Picker & Quick Mode Toggles -->
       <div class="flex items-center gap-2">
         <!-- Model Picker Badge -->
-        <div id="header-model-badge" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--accent-blue)] ui-transition shadow-sm">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="header-model-name">Loading...</span>
-          <svg class="w-3 h-3 text-[var(--text-muted)]"><use href="#icon-chevron-down"/></svg>
+        <div class="relative inline-block">
+          <div id="header-model-badge" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--accent-blue)] ui-spring shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="header-model-name">Loading...</span>
+            <svg class="w-3 h-3 text-[var(--text-muted)]"><use href="#icon-chevron-down"/></svg>
+          </div>
         </div>
 
         <!-- Header Quick Mode Button: Code Interpreter -->
-        <button id="header-code-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Toggle Code Interpreter (Python WASM)">
+        <button id="header-code-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-spring" title="Toggle Code Interpreter (Python WASM)">
           <svg class="w-3.5 h-3.5 text-emerald-400"><use href="#icon-python"/></svg>
           <span class="text-[11px]">Python</span>
         </button>
 
         <!-- Header Quick Mode Button: Web Search -->
-        <button id="header-search-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Toggle Web Connection (Free Grounding)">
+        <button id="header-search-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-spring" title="Toggle Web Connection (Free Grounding)">
           <svg class="w-3.5 h-3.5 text-cyan-400"><use href="#icon-search"/></svg>
           <span class="text-[11px]">Web</span>
         </button>
@@ -135,7 +164,19 @@
 
       <!-- Right Header Controls -->
       <div class="flex items-center gap-2">
-        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] ui-transition" title="Model Parameters">
+        <!-- Quick New Chat Button in Header -->
+        <button id="header-btn-new-chat" class="p-1.5 px-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] border border-[var(--surface-border)] ui-spring flex items-center gap-1.5 text-xs shadow-sm" title="Start new conversation">
+          <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-plus"/></svg>
+          <span class="hidden md:inline text-[11px] font-medium text-[var(--text-primary)]">New</span>
+        </button>
+
+        <!-- Header Token Indicator -->
+        <div id="header-token-indicator" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)]" title="Context Token Budget">
+          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+          <span id="header-token-count">0 tokens</span>
+        </div>
+
+        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] ui-spring" title="Model Parameters">
           <svg class="w-4 h-4"><use href="#icon-sliders"/></svg>
           <span class="hidden sm:inline">Parameters</span>
         </button>
@@ -149,16 +190,20 @@
       <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-3xl my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
         <!-- Empty State: Dynamic Greeting & Suggestions -->
         <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
-          <h1 id="greeting-heading" class="text-3xl md:text-4xl font-semibold tracking-tight text-[var(--text-primary)] mb-2">
+          <div class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[11px] text-[var(--text-muted)]">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>AskBOT Multi-Provider AI</span>
+          </div>
+          <h1 id="greeting-heading" class="greeting-editorial text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-[var(--text-primary)] mb-3 min-h-[1.25em]">
             Good evening
           </h1>
-          <p class="text-sm md:text-base text-[var(--text-muted)] mb-8 max-w-md">
-            How can I assist your workflow today?
+          <p id="greeting-subprompt" class="text-sm md:text-base text-[var(--text-muted)] mb-8 max-w-md leading-relaxed ui-transition">
+            Select a prompt below or start typing to begin.
           </p>
 
           <!-- 4 Randomized Action Chips -->
           <div id="suggestion-chips-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-left">
-            <!-- Suggestion chips will be injected here -->
+            <!-- Suggestion chips will be injected here with staggered entrance -->
           </div>
         </div>
 
@@ -237,6 +282,15 @@
         <!-- Mode Toggles & Thinking Pill Row -->
         <div class="flex items-center justify-between border-t border-[var(--surface-border)] pt-2 px-2 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
+            <!-- Model Switcher inside Chat Input -->
+            <div class="relative inline-block">
+              <button id="composer-model-pill" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-spring font-medium text-[11px] max-w-[200px] truncate group" title="Switch AI Model">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                <span id="composer-model-name" class="truncate font-medium">Select Model</span>
+                <svg class="w-2.5 h-2.5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] flex-shrink-0 ui-transition"><use href="#icon-chevron-down"/></svg>
+              </button>
+            </div>
+
             <!-- Code Interpreter Mode Toggle Button -->
             <button id="toggle-code-interpreter" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Execute Python client-side via Pyodide WASM">
               <svg class="w-3.5 h-3.5"><use href="#icon-python"/></svg>

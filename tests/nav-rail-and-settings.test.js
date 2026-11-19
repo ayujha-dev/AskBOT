@@ -119,7 +119,7 @@ test('BackgroundEffects: Light mode orbs and dark mode calming configurations ar
   assert.ok(BackgroundEffects);
   
   const content = fs.readFileSync(path.resolve('js/ui/components/background-effects.js'), 'utf-8');
-  assert.ok(content.includes('rgba(99, 102, 241, 0.22)'), 'Light mode Indigo orb must have vibrant visibility');
-  assert.ok(content.includes('rgba(14, 165, 233, 0.22)'), 'Light mode Sky orb must have vibrant visibility');
-  assert.ok(content.includes('rgba(99, 102, 241, 0.09)'), 'Dark mode Indigo orb must be calming and diffuse');
+  assert.ok(content.includes('rgba(99, 102, 241, 0.12)'), 'Light mode Indigo orb must have soft misty visibility');
+  assert.ok(content.includes('rgba(129, 140, 248, 0.11)'), 'Light mode Periwinkle orb must harmonize with palette');
+  assert.ok(content.includes('rgba(99, 102, 241, 0.06)'), 'Dark mode Indigo orb must be calming and diffuse');
 });
