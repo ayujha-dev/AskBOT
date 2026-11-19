@@ -33,10 +33,12 @@ test('Enhancements: Glassmorphism and Mode UI elements exist in DOM & styles', a
   const html = fs.readFileSync(path.resolve('index.html'), 'utf-8');
   assert.ok(html.includes('id="bg-canvas"'), 'Canvas element for animated background must exist');
   assert.ok(html.includes('id="parameters-backdrop"'), 'Backdrop for parameter drawer must exist');
-  assert.ok(html.includes('id="header-code-toggle"'), 'Header quick button for code interpreter must exist');
-  assert.ok(html.includes('id="header-search-toggle"'), 'Header quick button for web search must exist');
+  assert.ok(html.includes('id="toggle-code-interpreter"'), 'Composer button for code interpreter must exist');
+  assert.ok(html.includes('id="toggle-web-search"'), 'Composer button for web search must exist');
   assert.ok(html.includes('id="code-interpreter-status-badge"'), 'Composer badge dot for code interpreter must exist');
   assert.ok(html.includes('id="web-search-status-badge"'), 'Composer badge dot for web search must exist');
+  assert.ok(html.includes('id="header-model-badge"'), 'Header model badge must exist in center');
+  assert.ok(html.includes('id="header-provider-pill"'), 'Header provider pill must exist in center');
 
   const css = fs.readFileSync(path.resolve('css/main.css'), 'utf-8');
   assert.ok(css.includes('--glass-blur'), 'CSS must define glass blur token');

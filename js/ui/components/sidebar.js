@@ -146,6 +146,10 @@ export class SidebarComponent {
     if (this.headerModelName) {
       this.headerModelName.textContent = selectedModel || (activeProvider ? `${activeProvider} (Select Model)` : 'Setup Key');
     }
+    const headerProviderPill = document.getElementById('header-provider-pill');
+    if (headerProviderPill) {
+      headerProviderPill.textContent = (activeProvider || 'GROQ').toUpperCase();
+    }
   }
 
   renderHistory() {

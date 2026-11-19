@@ -54,9 +54,8 @@ class AppCoordinator {
       onSelectModel: (pill) => this.showModelPickerDropdown(pill, 'top')
     });
 
-    // 2. Wire Header Controls: Model Picker, New Chat, Mode Toggles
+    // 2. Wire Header Controls: Model Picker, New Chat
     this.wireHeaderModelPicker();
-    this.wireHeaderModeButtons();
 
     const headerNewChatBtn = document.getElementById('header-btn-new-chat');
     if (headerNewChatBtn) {
@@ -112,60 +111,8 @@ class AppCoordinator {
 
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.showModelPickerDropdown(badge);
+      this.showModelPickerDropdown(badge, 'bottom');
     });
-  }
-
-  wireHeaderModeButtons() {
-    const codeBtn = document.getElementById('header-code-toggle');
-    const searchBtn = document.getElementById('header-search-toggle');
-
-    if (codeBtn) {
-      codeBtn.addEventListener('click', () => {
-        const current = store.getState().modes.codeInterpreter;
-        store.setState({
-          modes: { ...store.getState().modes, codeInterpreter: !current }
-        });
-      });
-    }
-
-    if (searchBtn) {
-      searchBtn.addEventListener('click', () => {
-        const current = store.getState().modes.webSearch;
-        store.setState({
-          modes: { ...store.getState().modes, webSearch: !current }
-        });
-      });
-    }
-
-    const syncHeaderButtons = (modes) => {
-      if (codeBtn) {
-        if (modes.codeInterpreter) {
-          codeBtn.classList.add('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
-          codeBtn.classList.remove('text-[var(--text-muted)]');
-        } else {
-          codeBtn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
-          codeBtn.classList.add('text-[var(--text-muted)]');
-        }
-      }
-      if (searchBtn) {
-        if (modes.webSearch) {
-          searchBtn.classList.add('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
-          searchBtn.classList.remove('text-[var(--text-muted)]');
-        } else {
-          searchBtn.classList.remove('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
-          searchBtn.classList.add('text-[var(--text-muted)]');
-        }
-      }
-    };
-
-    store.subscribe((state, changedKeys) => {
-      if (changedKeys.includes('modes')) {
-        syncHeaderButtons(state.modes);
-      }
-    });
-
-    syncHeaderButtons(store.getState().modes);
   }
 
   showModelPickerDropdown(anchorEl, placement = 'bottom') {
