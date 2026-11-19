@@ -6,7 +6,7 @@
 [![Zero Build](https://img.shields.io/badge/Build-Zero%20Build%20(Pure%20ESM)-purple?style=flat-square)](#quickstart-zero-build)
 [![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)](#byok-privacy-guarantee)
 [![Tests](https://img.shields.io/badge/Tests-33%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
-[![Deployed on Vercel](https://img.shields.io/badge/Deploy-Vercel%20Ready-black?style=flat-square&logo=vercel)](#deployment)
+[![Live Demo on Vercel](https://img.shields.io/badge/Live%20Demo-askbot--rust.vercel.app-black?style=flat-square&logo=vercel)](https://askbot-rust.vercel.app)
 
 ---
 
@@ -72,16 +72,11 @@ Right-click `index.html` in VS Code and select **"Open with Live Server"**.
 
 ---
 
-## 🌐 Deployment
+## 🌐 Deployment & Live Demo
 
-AskBOT is 100% static and deploys seamlessly to any edge or CDN provider.
+AskBOT is live on Vercel at **[https://askbot-rust.vercel.app](https://askbot-rust.vercel.app)**.
 
-### Deploy on Vercel
-```bash
-# Using Vercel CLI
-npx vercel
-```
-Or import the GitHub repository (`https://github.com/ayujha-dev/AskBOT.git`) directly in your [Vercel Dashboard](https://vercel.com/new). No build commands or output directories needed!
+Continuous deployments are configured via GitHub integration with `ayujha-dev/AskBOT`. Every push to `main` deploys automatically with zero build configuration.
 
 ### Deploy on Netlify / Cloudflare Pages / GitHub Pages
 - **Build command**: None (leave empty)
