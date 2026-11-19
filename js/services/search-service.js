@@ -4,6 +4,24 @@
 
 export class SearchService {
   /**
+   * Returns current web connection status details.
+   */
+  static getConnectionStatus(apiKeys = {}) {
+    if (apiKeys.tavily && apiKeys.tavily.trim()) {
+      return {
+        type: 'tavily',
+        label: 'Tavily Deep Search (Key Active)',
+        isFree: false
+      };
+    }
+    return {
+      type: 'free',
+      label: 'Free Web Grounding (DuckDuckGo + Wikipedia)',
+      isFree: true
+    };
+  }
+
+  /**
    * Cleans user prompt into search keywords by stripping common question fillers.
    * @param {string} prompt
    * @returns {string}

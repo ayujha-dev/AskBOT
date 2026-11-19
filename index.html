@@ -15,10 +15,10 @@
         extend: {
           colors: {
             gemini: {
-              dark: '#131314',
-              surface: '#1E1F20',
-              border: '#2B2C2E',
-              blue: '#8AB4F8',
+              dark: '#090A0F',
+              surface: 'rgba(18, 20, 29, 0.65)',
+              border: 'rgba(255, 255, 255, 0.08)',
+              blue: '#818CF8',
             }
           }
         }
@@ -34,7 +34,10 @@
   <link rel="stylesheet" href="css/highlight-theme.css">
   <link rel="stylesheet" href="css/main.css">
 </head>
-<body class="h-screen w-screen flex overflow-hidden select-none">
+<body class="h-screen w-screen flex overflow-hidden select-none relative">
+
+  <!-- Reactbits-style Animated Background Canvas -->
+  <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
   <!-- Reusable SVG Icon Sprites -->
   <div id="svg-icons-container" style="display: none;"></div>
@@ -46,10 +49,10 @@
   </script>
 
   <!-- ==================== SIDEBAR ==================== -->
-  <aside id="sidebar" class="w-64 md:w-72 h-full flex flex-col flex-shrink-0 border-r border-[var(--surface-border)] bg-[var(--surface-panel)] transition-all duration-200 z-30">
+  <aside id="sidebar" class="w-64 md:w-72 h-full flex flex-col flex-shrink-0 border-r border-[var(--surface-border)] glass-panel transition-all duration-200 z-30 relative">
     <!-- Sidebar Header -->
     <div class="p-3 flex items-center justify-between border-b border-[var(--surface-border)]">
-      <button id="btn-new-chat" class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-bg)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-transition shadow-sm text-[var(--text-primary)]">
+      <button id="btn-new-chat" class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-transition shadow-sm text-[var(--text-primary)]">
         <svg class="w-4 h-4"><use href="#icon-plus"/></svg>
         <span>New chat</span>
       </button>
@@ -69,7 +72,7 @@
     <!-- Sidebar Footer -->
     <div class="p-3 border-t border-[var(--surface-border)] flex flex-col gap-2">
       <!-- Active Provider / Model Info Card -->
-      <div id="sidebar-provider-card" class="px-3 py-2 rounded-xl bg-[var(--surface-bg)] border border-[var(--surface-border)] flex items-center justify-between cursor-pointer hover:border-[var(--accent-blue)] ui-transition">
+      <div id="sidebar-provider-card" class="px-3 py-2 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] flex items-center justify-between cursor-pointer hover:border-[var(--accent-blue)] ui-transition">
         <div class="flex flex-col min-w-0">
           <span class="text-[10px] font-semibold tracking-wider uppercase text-[var(--text-muted)]" id="active-provider-label">GROQ</span>
           <span class="text-xs font-medium text-[var(--text-primary)] truncate" id="active-model-label">Select Model...</span>
@@ -92,10 +95,10 @@
   </aside>
 
   <!-- ==================== MAIN CONTENT AREA ==================== -->
-  <div class="flex-1 flex flex-col h-full overflow-hidden bg-[var(--surface-bg)] relative">
+  <div class="flex-1 flex flex-col h-full overflow-hidden relative z-10">
     
     <!-- Header -->
-    <header id="app-header" class="h-14 flex items-center justify-between px-4 border-b border-[var(--surface-border)] bg-[var(--surface-bg)] flex-shrink-0 z-20">
+    <header id="app-header" class="h-14 flex items-center justify-between px-4 border-b border-[var(--surface-border)] glass-panel flex-shrink-0 z-20">
       <div class="flex items-center gap-3">
         <button id="btn-toggle-sidebar" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Toggle sidebar">
           <svg class="w-5 h-5"><use href="#icon-sliders"/></svg>
@@ -108,18 +111,31 @@
         </a>
       </div>
 
-      <!-- Center / Model Picker Button -->
+      <!-- Center Controls: Model Picker & Quick Mode Toggles -->
       <div class="flex items-center gap-2">
-        <div id="header-model-badge" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--accent-blue)] ui-transition">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <!-- Model Picker Badge -->
+        <div id="header-model-badge" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--accent-blue)] ui-transition shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <span id="header-model-name">Loading...</span>
           <svg class="w-3 h-3 text-[var(--text-muted)]"><use href="#icon-chevron-down"/></svg>
         </div>
+
+        <!-- Header Quick Mode Button: Code Interpreter -->
+        <button id="header-code-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Toggle Code Interpreter (Python WASM)">
+          <svg class="w-3.5 h-3.5 text-emerald-400"><use href="#icon-python"/></svg>
+          <span class="text-[11px]">Python</span>
+        </button>
+
+        <!-- Header Quick Mode Button: Web Search -->
+        <button id="header-search-toggle" class="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Toggle Web Connection (Free Grounding)">
+          <svg class="w-3.5 h-3.5 text-cyan-400"><use href="#icon-search"/></svg>
+          <span class="text-[11px]">Web</span>
+        </button>
       </div>
 
       <!-- Right Header Controls -->
       <div class="flex items-center gap-2">
-        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] ui-transition" title="Playground Parameters">
+        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] ui-transition" title="Model Parameters">
           <svg class="w-4 h-4"><use href="#icon-sliders"/></svg>
           <span class="hidden sm:inline">Parameters</span>
         </button>
@@ -170,35 +186,37 @@
           <textarea id="composer-textarea" rows="1" placeholder="Ask anything... (Enter to send, Shift+Enter for newline)" class="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] max-h-44 py-2 leading-relaxed"></textarea>
 
           <!-- Send / Stop Button -->
-          <button id="btn-send-message" class="p-2 rounded-full bg-[var(--accent-blue)] text-white hover:opacity-90 ui-transition disabled:opacity-40 disabled:cursor-not-allowed" title="Send message">
+          <button id="btn-send-message" class="p-2.5 rounded-full bg-[var(--accent-blue)] text-white hover:opacity-90 ui-transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md" title="Send message">
             <svg class="w-4 h-4"><use href="#icon-send"/></svg>
           </button>
         </div>
 
         <!-- Mode Toggles & Thinking Pill Row -->
         <div class="flex items-center justify-between border-t border-[var(--surface-border)] pt-2 px-2 text-xs">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <!-- Code Interpreter Mode Toggle -->
-            <button id="toggle-code-interpreter" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--surface-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition font-medium text-[11px]" title="Execute Python client-side via Pyodide WASM">
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Code Interpreter Mode Toggle Button -->
+            <button id="toggle-code-interpreter" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Execute Python client-side via Pyodide WASM">
               <svg class="w-3.5 h-3.5"><use href="#icon-python"/></svg>
               <span>Code Interpreter</span>
+              <span id="code-interpreter-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
             </button>
 
-            <!-- Web Search Mode Toggle -->
-            <button id="toggle-web-search" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--surface-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition font-medium text-[11px]" title="Ground response with live web search">
+            <!-- Web Search Mode Toggle Button -->
+            <button id="toggle-web-search" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)] ui-transition font-medium text-[11px]" title="Ground response with live web connection (Free DuckDuckGo & Wikipedia search)">
               <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
               <span>Web Search</span>
+              <span id="web-search-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
             </button>
 
             <!-- Thinking Mode Selector Pill -->
             <div class="relative inline-block">
-              <button id="btn-thinking-menu" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--surface-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth">
+              <button id="btn-thinking-menu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth">
                 <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
                 <span>Thinking: <strong id="thinking-level-label" class="font-semibold text-[var(--text-primary)]">Off</strong></span>
                 <svg class="w-2.5 h-2.5 ml-0.5"><use href="#icon-chevron-down"/></svg>
               </button>
               <!-- Thinking Dropdown -->
-              <div id="thinking-dropdown" class="hidden absolute bottom-full mb-1 left-0 w-36 py-1 rounded-xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-lg z-30 text-xs">
+              <div id="thinking-dropdown" class="hidden absolute bottom-full mb-1 left-0 w-36 py-1 rounded-xl glass-card z-30 text-xs">
                 <button data-level="off" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Off</button>
                 <button data-level="low" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Low</button>
                 <button data-level="medium" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Medium</button>
@@ -218,8 +236,10 @@
 
   </div>
 
-  <!-- ==================== GROQ PLAYGROUND PARAMETERS DRAWER ==================== -->
-  <aside id="parameters-drawer" class="fixed top-0 right-0 h-full w-80 bg-[var(--drawer-bg)] border-l border-[var(--surface-border)] shadow-xl transform translate-x-full transition-transform duration-200 z-40 flex flex-col">
+  <!-- ==================== GROQ PLAYGROUND PARAMETERS BACKDROP & DRAWER ==================== -->
+  <div id="parameters-backdrop" class="fixed inset-0 modal-overlay z-40 hidden"></div>
+
+  <aside id="parameters-drawer" class="fixed top-0 right-0 h-full w-80 md:w-96 glass-panel border-l border-[var(--surface-border)] shadow-2xl transform translate-x-full transition-transform duration-200 z-50 flex flex-col">
     <div class="p-4 border-b border-[var(--surface-border)] flex items-center justify-between">
       <div class="flex items-center gap-2">
         <svg class="w-4 h-4 text-[var(--accent-blue)]"><use href="#icon-sliders"/></svg>
@@ -231,41 +251,60 @@
     </div>
 
     <div class="p-4 flex-1 overflow-y-auto space-y-6 text-xs">
-      <!-- Temperature Slider -->
+      <!-- Quick Parameter Presets -->
       <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-2">Presets</div>
+        <div class="grid grid-cols-3 gap-2">
+          <button class="btn-param-preset px-2 py-2 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:border-[var(--accent-blue)] text-center ui-transition" data-preset="precise">
+            <div class="font-medium text-[var(--text-primary)] text-xs">Precise</div>
+            <div class="text-[10px] text-[var(--text-muted)] mt-0.5">0.20 Temp</div>
+          </button>
+          <button class="btn-param-preset px-2 py-2 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:border-[var(--accent-blue)] text-center ui-transition" data-preset="balanced">
+            <div class="font-medium text-[var(--text-primary)] text-xs">Balanced</div>
+            <div class="text-[10px] text-[var(--text-muted)] mt-0.5">0.70 Temp</div>
+          </button>
+          <button class="btn-param-preset px-2 py-2 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:border-[var(--accent-blue)] text-center ui-transition" data-preset="creative">
+            <div class="font-medium text-[var(--text-primary)] text-xs">Creative</div>
+            <div class="text-[10px] text-[var(--text-muted)] mt-0.5">1.20 Temp</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Temperature Slider -->
+      <div class="p-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)]">
         <div class="flex items-center justify-between mb-1.5">
           <label for="param-temperature" class="font-medium text-[var(--text-primary)]">Temperature</label>
-          <span id="param-temp-val" class="font-mono text-[var(--accent-blue)] font-semibold">0.70</span>
+          <span id="param-temp-val" class="font-mono text-[var(--accent-blue)] font-semibold px-2 py-0.5 rounded bg-[var(--surface-panel)]">0.70</span>
         </div>
         <input type="range" id="param-temperature" min="0" max="2" step="0.05" value="0.7" class="w-full h-1.5 rounded-lg bg-[var(--surface-panel)] cursor-pointer">
-        <p class="text-[11px] text-[var(--text-muted)] mt-1">Controls randomness. Clamped to 1.0 for Claude when thinking is enabled.</p>
+        <p class="text-[11px] text-[var(--text-muted)] mt-1.5 leading-relaxed">Controls randomness. Clamped to 1.0 for Claude when thinking is enabled.</p>
       </div>
 
       <!-- Max Completion Tokens Slider -->
-      <div>
+      <div class="p-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)]">
         <div class="flex items-center justify-between mb-1.5">
           <label for="param-max-tokens" class="font-medium text-[var(--text-primary)]">Max Completion Tokens</label>
-          <span id="param-max-tokens-val" class="font-mono text-[var(--accent-blue)] font-semibold">4096</span>
+          <span id="param-max-tokens-val" class="font-mono text-[var(--accent-blue)] font-semibold px-2 py-0.5 rounded bg-[var(--surface-panel)]">4096</span>
         </div>
         <input type="range" id="param-max-tokens" min="256" max="16384" step="256" value="4096" class="w-full h-1.5 rounded-lg bg-[var(--surface-panel)] cursor-pointer">
-        <p class="text-[11px] text-[var(--text-muted)] mt-1">Maximum tokens in model completion response.</p>
+        <p class="text-[11px] text-[var(--text-muted)] mt-1.5 leading-relaxed">Maximum tokens allowed in the model's generated response.</p>
       </div>
 
       <!-- Context Window Tokens Budget Slider -->
-      <div>
+      <div class="p-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-card)]">
         <div class="flex items-center justify-between mb-1.5">
           <label for="param-context-budget" class="font-medium text-[var(--text-primary)]">Context Window Tokens</label>
-          <span id="param-context-budget-val" class="font-mono text-[var(--accent-blue)] font-semibold">8192</span>
+          <span id="param-context-budget-val" class="font-mono text-[var(--accent-blue)] font-semibold px-2 py-0.5 rounded bg-[var(--surface-panel)]">8192</span>
         </div>
         <input type="range" id="param-context-budget" min="1024" max="32768" step="1024" value="8192" class="w-full h-1.5 rounded-lg bg-[var(--surface-panel)] cursor-pointer">
-        <p class="text-[11px] text-[var(--text-muted)] mt-1">Client-side sliding budget. Automatically trims oldest messages to fit payload.</p>
+        <p class="text-[11px] text-[var(--text-muted)] mt-1.5 leading-relaxed">Client-side sliding budget. Automatically trims oldest messages to fit payload.</p>
       </div>
     </div>
   </aside>
 
   <!-- ==================== ONBOARDING MODAL ==================== -->
   <div id="onboarding-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-card w-full max-w-md rounded-2xl p-6 shadow-2xl relative text-[var(--text-primary)]">
+    <div class="modal-card w-full max-w-md rounded-2xl p-6 relative text-[var(--text-primary)]">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-xl bg-[var(--accent-subtle)] text-[var(--accent-blue)] flex items-center justify-center font-bold text-lg">
           A
@@ -301,7 +340,7 @@
       </div>
 
       <div class="flex items-center justify-end gap-2">
-        <button id="btn-onboard-submit" class="px-4 py-2 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition flex items-center gap-1.5">
+        <button id="btn-onboard-submit" class="px-4 py-2 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition flex items-center gap-1.5 shadow-md">
           <span>Validate & Save</span>
         </button>
       </div>
@@ -310,7 +349,7 @@
 
   <!-- ==================== SETTINGS MODAL ==================== -->
   <div id="settings-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-card w-full max-w-lg rounded-2xl p-6 shadow-2xl relative text-[var(--text-primary)] flex flex-col max-h-[90vh]">
+    <div class="modal-card w-full max-w-lg rounded-2xl p-6 relative text-[var(--text-primary)] flex flex-col max-h-[90vh]">
       <div class="flex items-center justify-between pb-3 border-b border-[var(--surface-border)]">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-[var(--accent-blue)]"><use href="#icon-gear"/></svg>
@@ -332,13 +371,20 @@
           <!-- Dynamically populated provider key inputs -->
         </div>
 
-        <!-- Optional Search Key -->
-        <div class="pt-2 border-t border-[var(--surface-border)]">
-          <h3 class="text-xs font-semibold mb-2 text-[var(--text-primary)]">Web Search Provider (Optional)</h3>
-          <p class="text-[11px] text-[var(--text-muted)] mb-2">By default, AskBOT uses Wikipedia & DuckDuckGo Instant Answers. You can optionally supply a Tavily API key for deeper web search.</p>
-          <div class="flex gap-2">
-            <input type="password" id="key-input-tavily" placeholder="Tavily API Key (tvly-...)" class="flex-1 px-3 py-1.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]">
-            <button id="btn-save-tavily" class="px-3 py-1.5 rounded-xl border border-[var(--surface-border)] hover:bg-[var(--surface-panel-hover)] font-medium text-xs ui-transition">Save</button>
+        <!-- Web Search Provider Info & Key -->
+        <div class="p-3.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-xs text-[var(--text-primary)]">Web Search Connection</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">Free Grounding Active</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+            By default, AskBOT uses free, keyless client-side web grounding via DuckDuckGo + Wikipedia. You can also optionally provide a Tavily API key for deeper web retrieval.
+          </p>
+          <div class="flex gap-2 pt-1">
+            <input type="password" id="key-input-tavily" placeholder="Tavily API Key (Optional: tvly-...)" class="flex-1 px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono">
+            <button id="btn-save-tavily" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] font-medium text-xs ui-transition text-[var(--text-primary)]">Save</button>
           </div>
         </div>
       </div>
@@ -348,7 +394,7 @@
           <svg class="w-3.5 h-3.5"><use href="#icon-trash"/></svg>
           <span>Clear All Local Data</span>
         </button>
-        <button id="btn-save-close-settings" class="px-4 py-1.5 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition">
+        <button id="btn-save-close-settings" class="px-4 py-1.5 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition shadow-sm">
           Done
         </button>
       </div>

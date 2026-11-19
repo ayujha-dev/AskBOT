@@ -2,8 +2,15 @@ import { store } from '../../state/store.js';
 import { TokenCounter } from '../../services/token-counter.js';
 
 export class ParametersDrawer {
+  static PRESETS = {
+    precise: { temperature: 0.2, maxTokens: 2048 },
+    balanced: { temperature: 0.7, maxTokens: 4096 },
+    creative: { temperature: 1.2, maxTokens: 8192 }
+  };
+
   constructor() {
     this.drawerEl = document.getElementById('parameters-drawer');
+    this.backdropEl = document.getElementById('parameters-backdrop');
     this.btnToggle = document.getElementById('btn-toggle-params');
     this.btnClose = document.getElementById('btn-close-drawer');
 
@@ -31,6 +38,25 @@ export class ParametersDrawer {
     if (this.btnClose) {
       this.btnClose.addEventListener('click', () => this.close());
     }
+    if (this.backdropEl) {
+      this.backdropEl.addEventListener('click', () => this.close());
+    }
+
+    // Escape key to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.drawerEl.classList.contains('translate-x-full')) {
+        this.close();
+      }
+    });
+
+    // Preset buttons
+    const presetButtons = this.drawerEl.querySelectorAll('.btn-param-preset');
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const presetKey = btn.getAttribute('data-preset');
+        this.applyPreset(presetKey);
+      });
+    });
 
     // Slider inputs
     if (this.tempSlider) {
@@ -79,6 +105,23 @@ export class ParametersDrawer {
     this.syncValuesFromState(currentState.parameters);
     this.syncProviderConstraints(currentState.activeProvider);
     this.updateTokenIndicator();
+  }
+
+  applyPreset(presetKey) {
+    const preset = ParametersDrawer.PRESETS[presetKey];
+    if (!preset) return;
+
+    let temp = preset.temperature;
+    if (store.getState().activeProvider === 'claude' && temp > 1.0) {
+      temp = 1.0;
+    }
+
+    const updated = {
+      ...store.getState().parameters,
+      temperature: temp,
+      maxTokens: preset.maxTokens
+    };
+    store.setState({ parameters: updated });
   }
 
   syncValuesFromState(parameters) {
@@ -133,18 +176,29 @@ export class ParametersDrawer {
   open() {
     if (this.drawerEl) {
       this.drawerEl.classList.remove('translate-x-full');
+      if (this.backdropEl) {
+        this.backdropEl.classList.remove('hidden');
+      }
     }
   }
 
   close() {
     if (this.drawerEl) {
       this.drawerEl.classList.add('translate-x-full');
+      if (this.backdropEl) {
+        this.backdropEl.classList.add('hidden');
+      }
     }
   }
 
   toggle() {
     if (this.drawerEl) {
-      this.drawerEl.classList.toggle('translate-x-full');
+      const isClosed = this.drawerEl.classList.contains('translate-x-full');
+      if (isClosed) {
+        this.open();
+      } else {
+        this.close();
+      }
     }
   }
 }

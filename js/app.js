@@ -12,6 +12,7 @@ import { ParametersDrawer } from './ui/components/parameters-drawer.js';
 import { FileManager } from './ui/components/file-manager.js';
 import { OnboardingModal } from './ui/components/onboarding-modal.js';
 import { SettingsModal } from './ui/components/settings-modal.js';
+import { BackgroundEffects } from './ui/components/background-effects.js';
 
 class AppCoordinator {
   constructor() {
@@ -23,6 +24,7 @@ class AppCoordinator {
 
   init() {
     // 1. Initialize UI Subsystems
+    BackgroundEffects.init();
     this.parametersDrawer = new ParametersDrawer();
     this.fileManager = new FileManager();
     this.messagesComponent = new MessagesComponent();
@@ -48,8 +50,9 @@ class AppCoordinator {
       onSend: (text) => this.handleSendMessage(text)
     });
 
-    // 2. Wire Header Model Picker Badge
+    // 2. Wire Header Model Picker Badge and Quick Mode Toggles
     this.wireHeaderModelPicker();
+    this.wireHeaderModeButtons();
 
     // 3. Subscribe to store changes to keep conversation view in sync
     store.subscribe((state, changedKeys) => {
@@ -100,6 +103,58 @@ class AppCoordinator {
       e.stopPropagation();
       this.showModelPickerDropdown(badge);
     });
+  }
+
+  wireHeaderModeButtons() {
+    const codeBtn = document.getElementById('header-code-toggle');
+    const searchBtn = document.getElementById('header-search-toggle');
+
+    if (codeBtn) {
+      codeBtn.addEventListener('click', () => {
+        const current = store.getState().modes.codeInterpreter;
+        store.setState({
+          modes: { ...store.getState().modes, codeInterpreter: !current }
+        });
+      });
+    }
+
+    if (searchBtn) {
+      searchBtn.addEventListener('click', () => {
+        const current = store.getState().modes.webSearch;
+        store.setState({
+          modes: { ...store.getState().modes, webSearch: !current }
+        });
+      });
+    }
+
+    const syncHeaderButtons = (modes) => {
+      if (codeBtn) {
+        if (modes.codeInterpreter) {
+          codeBtn.classList.add('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
+          codeBtn.classList.remove('text-[var(--text-muted)]');
+        } else {
+          codeBtn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
+          codeBtn.classList.add('text-[var(--text-muted)]');
+        }
+      }
+      if (searchBtn) {
+        if (modes.webSearch) {
+          searchBtn.classList.add('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
+          searchBtn.classList.remove('text-[var(--text-muted)]');
+        } else {
+          searchBtn.classList.remove('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
+          searchBtn.classList.add('text-[var(--text-muted)]');
+        }
+      }
+    };
+
+    store.subscribe((state, changedKeys) => {
+      if (changedKeys.includes('modes')) {
+        syncHeaderButtons(state.modes);
+      }
+    });
+
+    syncHeaderButtons(store.getState().modes);
   }
 
   showModelPickerDropdown(anchorEl) {

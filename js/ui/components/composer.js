@@ -10,6 +10,8 @@ export class ComposerComponent {
 
     this.toggleCode = document.getElementById('toggle-code-interpreter');
     this.toggleSearch = document.getElementById('toggle-web-search');
+    this.codeStatusBadge = document.getElementById('code-interpreter-status-badge');
+    this.searchStatusBadge = document.getElementById('web-search-status-badge');
 
     this.btnThinking = document.getElementById('btn-thinking-menu');
     this.thinkingDropdown = document.getElementById('thinking-dropdown');
@@ -103,23 +105,33 @@ export class ComposerComponent {
     // Code Interpreter Pill
     if (this.toggleCode) {
       if (modes.codeInterpreter) {
-        this.toggleCode.classList.add('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
+        this.toggleCode.classList.add('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
         this.toggleCode.classList.remove('text-[var(--text-muted)]');
       } else {
-        this.toggleCode.classList.remove('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
+        this.toggleCode.classList.remove('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
         this.toggleCode.classList.add('text-[var(--text-muted)]');
       }
+    }
+    if (this.codeStatusBadge) {
+      this.codeStatusBadge.className = modes.codeInterpreter
+        ? 'w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse'
+        : 'w-1.5 h-1.5 rounded-full bg-zinc-500';
     }
 
     // Web Search Pill
     if (this.toggleSearch) {
       if (modes.webSearch) {
-        this.toggleSearch.classList.add('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
+        this.toggleSearch.classList.add('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
         this.toggleSearch.classList.remove('text-[var(--text-muted)]');
       } else {
-        this.toggleSearch.classList.remove('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
+        this.toggleSearch.classList.remove('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
         this.toggleSearch.classList.add('text-[var(--text-muted)]');
       }
+    }
+    if (this.searchStatusBadge) {
+      this.searchStatusBadge.className = modes.webSearch
+        ? 'w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse'
+        : 'w-1.5 h-1.5 rounded-full bg-zinc-500';
     }
 
     // Thinking Label
