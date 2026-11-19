@@ -1,4 +1,5 @@
 import { BaseProvider } from './base-provider.js';
+import { TagStreamBuffer } from '../utils/stream-buffer.js';
 
 export class GeminiProvider extends BaseProvider {
   constructor() {
@@ -89,6 +90,11 @@ export class GeminiProvider extends BaseProvider {
       contents.push({ role, parts });
     }
 
+    // Defensive check: Gemini API strictly requires that the first content turn has role 'user'
+    while (contents.length > 0 && contents[0].role === 'model') {
+      contents.shift();
+    }
+
     return { contents, systemInstruction };
   }
 
@@ -140,7 +146,7 @@ export class GeminiProvider extends BaseProvider {
       throw new Error(err.error?.message || `Gemini chat error: HTTP ${res.status}`);
     }
 
-    let insideThinkTag = false;
+    const tagBuffer = new TagStreamBuffer();
 
     await this.readSSEStream(res.body, ({ data }) => {
       try {
@@ -176,30 +182,14 @@ export class GeminiProvider extends BaseProvider {
           }
 
           if (part.text) {
-            let text = part.text;
-
-            if (text.includes('<think>')) {
-              insideThinkTag = true;
-              text = text.replace('<think>', '');
-            }
-            if (text.includes('</think>')) {
-              const subparts = text.split('</think>');
-              if (subparts[0]) onThinking(subparts[0]);
-              insideThinkTag = false;
-              if (subparts[1]) onChunk(subparts[1]);
-              continue;
-            }
-
-            if (insideThinkTag) {
-              onThinking(text);
-            } else {
-              onChunk(text);
-            }
+            tagBuffer.processChunk(part.text, onThinking, onChunk);
           }
         }
       } catch (e) {
         console.warn('Failed to parse Gemini SSE chunk:', e);
       }
     });
+
+    tagBuffer.flush(onThinking, onChunk);
   }
 }

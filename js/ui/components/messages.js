@@ -1,5 +1,6 @@
 import { MarkdownRenderer } from '../../utils/markdown.js';
 import { PyodideBridge } from '../../services/pyodide-bridge.js';
+import { escapeHtml, sanitizeUrl } from '../../utils/dom.js';
 
 export class MessagesComponent {
   constructor(containerEl, emptyStateEl) {
@@ -65,17 +66,18 @@ export class MessagesComponent {
     </div>`;
 
     if (result.stdout) {
-      inner += `<pre class="text-[var(--text-primary)] whitespace-pre-wrap mb-2">${result.stdout}</pre>`;
+      inner += `<pre class="text-[var(--text-primary)] whitespace-pre-wrap mb-2">${escapeHtml(result.stdout)}</pre>`;
     }
     if (result.stderr) {
-      inner += `<pre class="text-rose-400 whitespace-pre-wrap mb-2">${result.stderr}</pre>`;
+      inner += `<pre class="text-rose-400 whitespace-pre-wrap mb-2">${escapeHtml(result.stderr)}</pre>`;
     }
-    if (result.plotBase64) {
+    const plotData = result.plotBase64 || result.plotImageBase64;
+    if (plotData) {
       inner += `<div class="mt-3 p-2 bg-white rounded-lg flex justify-center">
-        <img src="data:image/png;base64,${result.plotBase64}" alt="Rendered Plot" class="max-w-full rounded shadow-sm">
+        <img src="data:image/png;base64,${plotData}" alt="Rendered Plot" class="max-w-full rounded shadow-sm">
       </div>`;
     }
-    if (!result.stdout && !result.stderr && !result.plotBase64) {
+    if (!result.stdout && !result.stderr && !plotData) {
       inner += `<div class="text-[var(--text-muted)] italic">Code executed with no output.</div>`;
     }
 
@@ -124,13 +126,13 @@ export class MessagesComponent {
           if (att.type === 'image') {
             const img = document.createElement('img');
             img.src = att.data;
-            img.alt = att.name;
+            img.alt = escapeHtml(att.name);
             img.className = 'w-24 h-24 object-cover rounded-xl border border-[var(--surface-border)]';
             attContainer.appendChild(img);
           } else {
             const chip = document.createElement('div');
             chip.className = 'px-2 py-1 rounded-lg bg-[var(--surface-bg)] border border-[var(--surface-border)] text-[11px] font-mono text-[var(--text-muted)] flex items-center gap-1.5';
-            chip.innerHTML = `<span class="font-bold text-[var(--accent-blue)]">FILE:</span> <span>${att.name}</span>`;
+            chip.innerHTML = `<span class="font-bold text-[var(--accent-blue)]">FILE:</span> <span>${escapeHtml(att.name)}</span>`;
             attContainer.appendChild(chip);
           }
         });
@@ -160,11 +162,11 @@ export class MessagesComponent {
 
         msg.searchSources.forEach((s, idx) => {
           const pill = document.createElement('a');
-          pill.href = s.url;
+          pill.href = sanitizeUrl(s.url);
           pill.target = '_blank';
           pill.rel = 'noopener noreferrer';
           pill.className = 'px-2.5 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition inline-flex items-center gap-1 truncate max-w-xs';
-          pill.innerHTML = `<span class="text-[var(--text-muted)]">[${idx + 1}]</span> <span class="truncate">${s.title}</span>`;
+          pill.innerHTML = `<span class="text-[var(--text-muted)]">[${idx + 1}]</span> <span class="truncate">${escapeHtml(s.title)}</span>`;
           sourcesTray.appendChild(pill);
         });
 
@@ -192,11 +194,15 @@ export class MessagesComponent {
           <span class="text-emerald-500">Executed</span>
         </div>`;
         if (msg.executionOutput.stdout) {
-          inner += `<pre class="text-[var(--text-primary)] whitespace-pre-wrap mb-2">${msg.executionOutput.stdout}</pre>`;
+          inner += `<pre class="text-[var(--text-primary)] whitespace-pre-wrap mb-2">${escapeHtml(msg.executionOutput.stdout)}</pre>`;
         }
-        if (msg.executionOutput.plotImageBase64) {
+        if (msg.executionOutput.stderr) {
+          inner += `<pre class="text-rose-400 whitespace-pre-wrap mb-2">${escapeHtml(msg.executionOutput.stderr)}</pre>`;
+        }
+        const plotData = msg.executionOutput.plotBase64 || msg.executionOutput.plotImageBase64;
+        if (plotData) {
           inner += `<div class="mt-3 p-2 bg-white rounded-lg flex justify-center">
-            <img src="data:image/png;base64,${msg.executionOutput.plotImageBase64}" alt="Plot" class="max-w-full rounded shadow-sm">
+            <img src="data:image/png;base64,${plotData}" alt="Plot" class="max-w-full rounded shadow-sm">
           </div>`;
         }
         outputWrapper.innerHTML = inner;
@@ -229,7 +235,7 @@ export class MessagesComponent {
     content.className = 'thought-accordion-content border-t border-[var(--surface-border)]';
     content.innerHTML = `
       <div class="thought-inner p-3.5 text-[11px] text-[var(--text-secondary)] font-mono whitespace-pre-wrap bg-[var(--surface-card)] max-h-72 overflow-y-auto leading-relaxed">
-        ${thinkingText}
+        ${escapeHtml(thinkingText)}
       </div>
     `;
 
@@ -310,9 +316,9 @@ export class MessagesComponent {
             Sources:
           </span>
           ${sources.map((s, idx) => `
-            <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition inline-flex items-center gap-1 truncate max-w-xs">
+            <a href="${sanitizeUrl(s.url)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition inline-flex items-center gap-1 truncate max-w-xs">
               <span class="text-[var(--text-muted)]">[${idx + 1}]</span>
-              <span class="truncate">${s.title}</span>
+              <span class="truncate">${escapeHtml(s.title)}</span>
             </a>
           `).join('')}
         </div>`;
@@ -339,3 +345,4 @@ export class MessagesComponent {
     }
   }
 }
+

@@ -1,4 +1,5 @@
 import { BaseProvider } from './base-provider.js';
+import { TagStreamBuffer } from '../utils/stream-buffer.js';
 
 export class ClaudeProvider extends BaseProvider {
   constructor() {
@@ -113,7 +114,8 @@ export class ClaudeProvider extends BaseProvider {
     const modelId = model || 'claude-3-7-sonnet-20250219';
     const { system, messages: formattedMessages } = this.formatMessages(messages);
 
-    const isThinkingEnabled = modes.thinkingLevel && modes.thinkingLevel !== 'off';
+    const isThinkingSupported = modelId.includes('3-7') || modelId.includes('3.7');
+    const isThinkingEnabled = isThinkingSupported && modes.thinkingLevel && modes.thinkingLevel !== 'off';
 
     const payload = {
       model: modelId,
@@ -156,7 +158,7 @@ export class ClaudeProvider extends BaseProvider {
       throw new Error(err.error?.message || `Claude chat error: HTTP ${res.status}`);
     }
 
-    let insideThinkTag = false;
+    const tagBuffer = new TagStreamBuffer();
 
     await this.readSSEStream(res.body, ({ event, data }) => {
       try {
@@ -170,30 +172,14 @@ export class ClaudeProvider extends BaseProvider {
           }
 
           if (json.delta.type === 'text_delta' && json.delta.text) {
-            let text = json.delta.text;
-
-            if (text.includes('<think>')) {
-              insideThinkTag = true;
-              text = text.replace('<think>', '');
-            }
-            if (text.includes('</think>')) {
-              const parts = text.split('</think>');
-              if (parts[0]) onThinking(parts[0]);
-              insideThinkTag = false;
-              if (parts[1]) onChunk(parts[1]);
-              return;
-            }
-
-            if (insideThinkTag) {
-              onThinking(text);
-            } else {
-              onChunk(text);
-            }
+            tagBuffer.processChunk(json.delta.text, onThinking, onChunk);
           }
         }
       } catch (e) {
         // Ignore ping or partial lines
       }
     });
+
+    tagBuffer.flush(onThinking, onChunk);
   }
 }

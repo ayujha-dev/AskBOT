@@ -3,6 +3,7 @@ import { store } from '../../state/store.js';
 export class ComposerComponent {
   constructor(options = {}) {
     this.onSend = options.onSend || (() => {});
+    this.fileManager = options.fileManager || null;
 
     this.textarea = document.getElementById('composer-textarea');
     this.btnSend = document.getElementById('btn-send-message');
@@ -138,7 +139,8 @@ export class ComposerComponent {
 
   updateSendButtonState() {
     const hasText = Boolean(this.textarea.value.trim());
-    this.btnSend.disabled = !hasText;
+    const hasAttachments = Boolean(this.fileManager && this.fileManager.getAttachments().length > 0);
+    this.btnSend.disabled = !hasText && !hasAttachments;
   }
 
   setText(text) {
@@ -153,7 +155,8 @@ export class ComposerComponent {
 
   submit() {
     const text = this.textarea.value.trim();
-    if (!text) return;
+    const hasAttachments = Boolean(this.fileManager && this.fileManager.getAttachments().length > 0);
+    if (!text && !hasAttachments) return;
 
     this.onSend(text);
     this.textarea.value = '';

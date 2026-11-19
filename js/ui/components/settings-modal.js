@@ -95,9 +95,10 @@ export class SettingsModal {
     for (const [providerId, config] of Object.entries(SettingsModal.PROVIDERS_CONFIG)) {
       const existingKey = currentKeys[providerId] || '';
       const hasKey = Boolean(existingKey);
+      const isActive = store.getState().activeProvider === providerId;
 
       const row = document.createElement('div');
-      row.className = 'p-3 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-2';
+      row.className = `p-3 rounded-xl border ${isActive ? 'border-[var(--accent-blue)] bg-[var(--surface-card)]' : 'border-[var(--surface-border)] bg-[var(--surface-panel)]'} space-y-2 ui-transition`;
 
       row.innerHTML = `
         <div class="flex items-center justify-between">
@@ -106,10 +107,18 @@ export class SettingsModal {
             <span class="text-[10px] px-2 py-0.5 rounded-full ${hasKey ? 'bg-emerald-500/10 text-emerald-500 font-medium' : 'bg-zinc-500/10 text-[var(--text-muted)]'}">
               ${hasKey ? 'Configured' : 'Not configured'}
             </span>
+            ${isActive ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)] text-white font-semibold">Active</span>' : ''}
           </div>
-          <a href="${config.docsUrl}" target="_blank" rel="noopener noreferrer" class="text-[11px] text-[var(--accent-blue)] hover:underline inline-flex items-center gap-0.5">
-            Get key &rarr;
-          </a>
+          <div class="flex items-center gap-2">
+            ${hasKey && !isActive ? `
+              <button class="btn-set-active text-[11px] font-medium text-[var(--accent-blue)] hover:underline" data-provider="${providerId}">
+                Set Active
+              </button>
+            ` : ''}
+            <a href="${config.docsUrl}" target="_blank" rel="noopener noreferrer" class="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] inline-flex items-center gap-0.5">
+              Get key &rarr;
+            </a>
+          </div>
         </div>
         <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">${config.description}</p>
         
@@ -129,6 +138,19 @@ export class SettingsModal {
         </div>
         <div class="provider-status-msg text-[11px] hidden pt-1"></div>
       `;
+
+      // Set active button
+      const setActiveBtn = row.querySelector('.btn-set-active');
+      if (setActiveBtn) {
+        setActiveBtn.addEventListener('click', () => {
+          const cached = store.getState().cachedModels[providerId] || [];
+          store.setState({
+            activeProvider: providerId,
+            selectedModel: cached[0]?.id || ProviderRegistry.getFallbackModels(providerId)[0]?.id || ''
+          });
+          this.renderProviders();
+        });
+      }
 
       // Password mask toggle
       const input = row.querySelector(`#input-${providerId}`);

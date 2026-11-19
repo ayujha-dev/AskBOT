@@ -44,6 +44,7 @@ class AppCoordinator {
     });
 
     this.composer = new ComposerComponent({
+      fileManager: this.fileManager,
       onSend: (text) => this.handleSendMessage(text)
     });
 
@@ -115,12 +116,31 @@ class AppCoordinator {
 
     dropdown = document.createElement('div');
     dropdown.id = 'header-model-dropdown';
-    dropdown.className = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 w-64 max-h-80 overflow-y-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-xl z-50 p-1.5 text-xs';
+    dropdown.className = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72 max-h-96 overflow-y-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-xl z-50 p-2 text-xs';
 
-    dropdown.innerHTML = `<div class="px-2.5 py-1.5 font-semibold text-[10px] uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--surface-border)] mb-1 flex items-center justify-between">
-      <span>${activeProvider.toUpperCase()} MODELS</span>
-      <span class="text-[10px] font-normal text-[var(--accent-blue)] cursor-pointer hover:underline" id="btn-dropdown-refresh">Refresh</span>
-    </div>`;
+    // Provider Tabs
+    const providers = ProviderRegistry.getSupportedProviders();
+    let providerTabsHtml = '<div class="flex items-center gap-1 overflow-x-auto pb-2 mb-2 border-b border-[var(--surface-border)]">';
+    for (const p of providers) {
+      const isCurrentP = p === activeProvider;
+      providerTabsHtml += `<button class="btn-tab-provider px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider ${
+        isCurrentP
+          ? 'bg-[var(--accent-blue)] text-white'
+          : 'bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+      }" data-provider="${p}">${p}</button>`;
+    }
+    providerTabsHtml += '</div>';
+
+    dropdown.innerHTML = `
+      ${providerTabsHtml}
+      <div class="px-1 py-1 font-semibold text-[10px] uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between mb-1">
+        <span>${activeProvider.toUpperCase()} MODELS</span>
+        <span class="text-[10px] font-normal text-[var(--accent-blue)] cursor-pointer hover:underline" id="btn-dropdown-refresh">Refresh</span>
+      </div>
+      <div id="dropdown-models-list" class="space-y-1"></div>
+    `;
+
+    const listEl = dropdown.querySelector('#dropdown-models-list');
 
     models.forEach(m => {
       const isSelected = m.id === selectedModel;
@@ -144,7 +164,24 @@ class AppCoordinator {
         dropdown.remove();
       });
 
-      dropdown.appendChild(item);
+      listEl.appendChild(item);
+    });
+
+    // Provider Tab Click Listener
+    dropdown.querySelectorAll('.btn-tab-provider').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nextProvider = btn.getAttribute('data-provider');
+        const cached = store.getState().cachedModels[nextProvider] || [];
+        const fallback = ProviderRegistry.getFallbackModels(nextProvider);
+        const nextModel = cached[0]?.id || fallback[0]?.id || '';
+        store.setState({
+          activeProvider: nextProvider,
+          selectedModel: nextModel
+        });
+        dropdown.remove();
+        this.showModelPickerDropdown(anchorEl);
+      });
     });
 
     anchorEl.parentElement.style.position = 'relative';

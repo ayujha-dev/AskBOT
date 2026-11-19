@@ -1,4 +1,5 @@
 import { BaseProvider } from './base-provider.js';
+import { TagStreamBuffer } from '../utils/stream-buffer.js';
 
 export class GroqProvider extends BaseProvider {
   constructor() {
@@ -109,7 +110,7 @@ export class GroqProvider extends BaseProvider {
       throw new Error(err.error?.message || `Groq chat error: HTTP ${res.status}`);
     }
 
-    let insideThinkTag = false;
+    const tagBuffer = new TagStreamBuffer();
 
     await this.readSSEStream(res.body, ({ data }) => {
       if (data === '[DONE]') return;
@@ -125,30 +126,13 @@ export class GroqProvider extends BaseProvider {
         }
 
         if (delta.content) {
-          let text = delta.content;
-
-          // Inline <think> tag handling
-          if (text.includes('<think>')) {
-            insideThinkTag = true;
-            text = text.replace('<think>', '');
-          }
-          if (text.includes('</think>')) {
-            const parts = text.split('</think>');
-            if (parts[0]) onThinking(parts[0]);
-            insideThinkTag = false;
-            if (parts[1]) onChunk(parts[1]);
-            return;
-          }
-
-          if (insideThinkTag) {
-            onThinking(text);
-          } else {
-            onChunk(text);
-          }
+          tagBuffer.processChunk(delta.content, onThinking, onChunk);
         }
       } catch (e) {
         console.warn('Failed to parse Groq SSE chunk:', e);
       }
     });
+
+    tagBuffer.flush(onThinking, onChunk);
   }
 }

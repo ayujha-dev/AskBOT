@@ -47,9 +47,14 @@ export class BaseProvider {
     try {
       while (true) {
         const { value, done } = await reader.read();
-        if (done) break;
+        if (done) {
+          buffer += decoder.decode(); // Flush any remaining bytes
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
+        // Normalize CRLF to LF
+        buffer = buffer.replace(/\r\n/g, '\n');
         const parts = buffer.split('\n\n');
         // Keep the last partial event block in the buffer
         buffer = parts.pop() || '';

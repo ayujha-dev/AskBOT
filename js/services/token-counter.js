@@ -96,10 +96,20 @@ export class TokenCounter {
 
     // Progressively remove from the beginning of conversationMessages
     while (trimmedConversation.length > 1) {
+      // Ensure candidate starts with a user turn
+      while (trimmedConversation.length > 1 && trimmedConversation[0].role === 'assistant') {
+        trimmedConversation.shift();
+      }
+
       const candidateList = [...systemMessages, ...trimmedConversation];
       if (this.estimateMessagesTokens(candidateList) <= budgetTokens) {
         return candidateList;
       }
+      trimmedConversation.shift();
+    }
+
+    // Ensure final trimmed slice starts with user turn if possible
+    while (trimmedConversation.length > 1 && trimmedConversation[0].role === 'assistant') {
       trimmedConversation.shift();
     }
 

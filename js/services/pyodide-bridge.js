@@ -37,6 +37,18 @@ export class PyodideBridge {
     return this.worker;
   }
 
+  static terminate() {
+    if (this.worker) {
+      try {
+        this.worker.terminate();
+      } catch (e) {
+        console.warn('Error terminating Pyodide worker:', e);
+      }
+      this.worker = null;
+    }
+    this.pendingRequests.clear();
+  }
+
   /**
    * Extract executable Python code from markdown text.
    * @param {string} markdown
@@ -70,6 +82,7 @@ export class PyodideBridge {
       const timer = setTimeout(() => {
         if (this.pendingRequests.has(id)) {
           this.pendingRequests.delete(id);
+          this.terminate();
           resolve({
             success: false,
             stdout: '',

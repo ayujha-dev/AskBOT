@@ -1,4 +1,5 @@
 import { store } from '../../state/store.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 export class SidebarComponent {
   constructor(options = {}) {
@@ -158,7 +159,7 @@ export class SidebarComponent {
       }`;
 
       item.innerHTML = `
-        <span class="chat-title truncate flex-1 pr-2">${chat.title || 'New conversation'}</span>
+        <span class="chat-title truncate flex-1 pr-2">${escapeHtml(chat.title || 'New conversation')}</span>
         <div class="chat-actions hidden group-hover:flex items-center gap-1 flex-shrink-0">
           <button class="btn-rename-chat p-1 rounded hover:bg-[var(--surface-border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]" title="Rename conversation">
             <svg class="w-3 h-3"><use href="#icon-edit"/></svg>
