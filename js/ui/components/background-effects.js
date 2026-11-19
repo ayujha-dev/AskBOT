@@ -69,37 +69,37 @@ export class BackgroundEffects {
       {
         x: width * 0.2,
         y: height * 0.25,
-        radius: Math.min(width, height) * 0.4,
-        colorDark: 'rgba(99, 102, 241, 0.16)', // Indigo
-        colorLight: 'rgba(99, 102, 241, 0.08)',
-        vx: 0.25,
-        vy: 0.18,
+        radius: Math.min(width, height) * 0.45,
+        colorDark: 'rgba(99, 102, 241, 0.09)', // Calming subtle Indigo
+        colorLight: 'rgba(99, 102, 241, 0.22)', // Vibrant ambient Indigo in light mode
+        vx: 0.2,
+        vy: 0.15,
         angle: 0
       },
       {
         x: width * 0.75,
         y: height * 0.35,
-        radius: Math.min(width, height) * 0.45,
-        colorDark: 'rgba(56, 189, 248, 0.14)', // Cyan / Azure
-        colorLight: 'rgba(56, 189, 248, 0.07)',
-        vx: -0.22,
-        vy: 0.28,
+        radius: Math.min(width, height) * 0.48,
+        colorDark: 'rgba(56, 189, 248, 0.08)', // Gentle Azure
+        colorLight: 'rgba(14, 165, 233, 0.22)', // Crisp Sky Blue in light mode
+        vx: -0.18,
+        vy: 0.22,
         angle: Math.PI / 2
       },
       {
         x: width * 0.5,
         y: height * 0.8,
-        radius: Math.min(width, height) * 0.42,
-        colorDark: 'rgba(168, 85, 247, 0.12)', // Purple / Violet
-        colorLight: 'rgba(168, 85, 247, 0.06)',
-        vx: 0.15,
-        vy: -0.24,
+        radius: Math.min(width, height) * 0.46,
+        colorDark: 'rgba(168, 85, 247, 0.07)', // Muted Violet
+        colorLight: 'rgba(217, 70, 239, 0.16)', // Gentle Violet-Rose in light mode
+        vx: 0.14,
+        vy: -0.18,
         angle: Math.PI
       }
     ];
 
     // 2. Subtle starlight dust particles
-    const particleCount = Math.min(45, Math.floor((width * height) / 28000));
+    const particleCount = Math.min(38, Math.floor((width * height) / 32000));
     this.particles = [];
 
     for (let i = 0; i < particleCount; i++) {
@@ -107,10 +107,10 @@ export class BackgroundEffects {
         x: Math.random() * width,
         y: Math.random() * height,
         size: Math.random() * 1.8 + 0.6,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
+        vx: (Math.random() - 0.5) * 0.22,
+        vy: (Math.random() - 0.5) * 0.22,
         alpha: Math.random() * 0.4 + 0.1,
-        alphaSpeed: (Math.random() * 0.008 + 0.003) * (Math.random() > 0.5 ? 1 : -1)
+        alphaSpeed: (Math.random() * 0.006 + 0.002) * (Math.random() > 0.5 ? 1 : -1)
       });
     }
   }
@@ -194,8 +194,8 @@ export class BackgroundEffects {
       }
 
       ctx.fillStyle = this.isDark
-        ? `rgba(165, 180, 252, ${p.alpha})`
-        : `rgba(99, 102, 241, ${p.alpha * 0.7})`;
+        ? `rgba(165, 180, 252, ${p.alpha * 0.45})`
+        : `rgba(79, 70, 229, ${p.alpha * 1.35})`;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);

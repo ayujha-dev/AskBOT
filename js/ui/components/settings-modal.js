@@ -1,5 +1,7 @@
 import { store } from '../../state/store.js';
 import { ProviderRegistry } from '../../providers/provider-registry.js';
+import { SearchService } from '../../services/search-service.js';
+import { escapeHtml } from '../../utils/dom.js';
 
 export class SettingsModal {
   static PRIVACY_NOTICE = "Your API keys are stored exclusively in your browser's localStorage and are sent directly to each provider's API. No intermediate backend or logging server is used.";
@@ -40,6 +42,8 @@ export class SettingsModal {
   constructor() {
     this.modalEl = document.getElementById('settings-modal');
     this.providersListEl = document.getElementById('settings-providers-list');
+    this.quickPillsEl = document.getElementById('quick-active-provider-pills');
+
     this.btnClose = document.getElementById('btn-close-settings');
     this.btnSaveClose = document.getElementById('btn-save-close-settings');
     this.btnClearAll = document.getElementById('btn-clear-all-data');
@@ -56,6 +60,16 @@ export class SettingsModal {
     if (this.btnClose) this.btnClose.addEventListener('click', () => this.close());
     if (this.btnSaveClose) this.btnSaveClose.addEventListener('click', () => this.close());
 
+    // Tabs navigation
+    const tabButtons = this.modalEl.querySelectorAll('.tab-btn-settings');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.getAttribute('data-tab');
+        this.switchTab(tab);
+      });
+    });
+
+    // Clear all data
     if (this.btnClearAll) {
       this.btnClearAll.addEventListener('click', () => {
         if (confirm('Are you sure you want to clear all API keys and chat history from this browser?')) {
@@ -65,6 +79,7 @@ export class SettingsModal {
       });
     }
 
+    // Save Tavily key
     if (this.btnSaveTavily && this.tavilyInput) {
       this.btnSaveTavily.addEventListener('click', () => {
         const val = this.tavilyInput.value.trim();
@@ -73,20 +88,97 @@ export class SettingsModal {
       });
     }
 
+    // Test live search tool
+    this.wireSearchTestTool();
+
+    // Export chats button
+    this.wireExportChats();
+
     this.renderProviders();
 
     store.subscribe((state, changedKeys) => {
-      if (changedKeys.includes('apiKeys')) {
+      if (changedKeys.includes('apiKeys') || changedKeys.includes('activeProvider')) {
         this.renderProviders();
+        this.renderQuickPills();
+        this.updateStorageStats();
       }
     });
   }
 
+  switchTab(tabName) {
+    const tabButtons = this.modalEl.querySelectorAll('.tab-btn-settings');
+    tabButtons.forEach(b => {
+      const isCurrent = b.getAttribute('data-tab') === tabName;
+      if (isCurrent) {
+        b.classList.add('active');
+        b.classList.remove('text-[var(--text-muted)]');
+      } else {
+        b.classList.remove('active');
+        b.classList.add('text-[var(--text-muted)]');
+      }
+    });
+
+    const panels = ['providers', 'grounding', 'storage'];
+    panels.forEach(p => {
+      const panelEl = document.getElementById(`tab-panel-${p}`);
+      if (panelEl) {
+        if (p === tabName) {
+          panelEl.classList.remove('hidden');
+        } else {
+          panelEl.classList.add('hidden');
+        }
+      }
+    });
+
+    if (tabName === 'storage') {
+      this.updateStorageStats();
+    }
+  }
+
+  renderQuickPills() {
+    if (!this.quickPillsEl) return;
+    this.quickPillsEl.innerHTML = '';
+
+    const { activeProvider, apiKeys } = store.getState();
+    const providers = Object.keys(SettingsModal.PROVIDERS_CONFIG);
+
+    providers.forEach(pId => {
+      const config = SettingsModal.PROVIDERS_CONFIG[pId];
+      const hasKey = Boolean(apiKeys[pId]);
+      const isActive = activeProvider === pId;
+
+      const pill = document.createElement('button');
+      pill.className = `px-3 py-1.5 rounded-xl text-xs font-medium border ui-transition flex items-center gap-1.5 ${
+        isActive
+          ? 'bg-[var(--accent-blue)] border-[var(--accent-blue)] text-white shadow-sm'
+          : 'bg-[var(--surface-card)] border-[var(--surface-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)]'
+      }`;
+
+      pill.innerHTML = `
+        <span class="w-1.5 h-1.5 rounded-full ${hasKey ? (isActive ? 'bg-white' : 'bg-emerald-400') : 'bg-zinc-500'}"></span>
+        <span>${config.name}</span>
+      `;
+
+      pill.addEventListener('click', () => {
+        const cached = store.getState().cachedModels[pId] || [];
+        store.setState({
+          activeProvider: pId,
+          selectedModel: cached[0]?.id || ProviderRegistry.getFallbackModels(pId)[0]?.id || ''
+        });
+      });
+
+      this.quickPillsEl.appendChild(pill);
+    });
+  }
+
   renderProviders() {
+    this.renderQuickPills();
+
     if (!this.providersListEl) return;
     this.providersListEl.innerHTML = '';
 
     const currentKeys = store.getState().apiKeys || {};
+    const cachedModels = store.getState().cachedModels || {};
 
     if (this.tavilyInput) {
       this.tavilyInput.value = currentKeys.tavily || '';
@@ -96,16 +188,25 @@ export class SettingsModal {
       const existingKey = currentKeys[providerId] || '';
       const hasKey = Boolean(existingKey);
       const isActive = store.getState().activeProvider === providerId;
+      const models = cachedModels[providerId] || [];
 
       const row = document.createElement('div');
-      row.className = `p-3 rounded-xl border ${isActive ? 'border-[var(--accent-blue)] bg-[var(--surface-card)]' : 'border-[var(--surface-border)] bg-[var(--surface-panel)]'} space-y-2 ui-transition`;
+      row.className = `p-3.5 rounded-xl border ${
+        isActive
+          ? 'border-[var(--accent-blue)] bg-[var(--surface-card)] shadow-sm'
+          : 'border-[var(--surface-border)] bg-[var(--surface-panel)]'
+      } space-y-2.5 ui-transition`;
 
       row.innerHTML = `
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="font-semibold text-xs text-[var(--text-primary)]">${config.name}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full ${hasKey ? 'bg-emerald-500/10 text-emerald-500 font-medium' : 'bg-zinc-500/10 text-[var(--text-muted)]'}">
-              ${hasKey ? 'Configured' : 'Not configured'}
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${
+              hasKey
+                ? 'bg-emerald-500/10 text-emerald-400 font-medium'
+                : 'bg-zinc-500/10 text-[var(--text-muted)]'
+            }">
+              ${hasKey ? (models.length > 0 ? `${models.length} models ready` : 'Key Configured') : 'Not configured'}
             </span>
             ${isActive ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-[var(--accent-blue)] text-white font-semibold">Active</span>' : ''}
           </div>
@@ -122,21 +223,24 @@ export class SettingsModal {
         </div>
         <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">${config.description}</p>
         
-        <div class="flex gap-2 items-center pt-1">
+        <div class="flex gap-2 items-center pt-0.5">
           <div class="relative flex-1">
-            <input type="password" id="input-${providerId}" placeholder="${config.placeholder}" value="${existingKey}" class="w-full px-3 py-1.5 text-xs rounded-lg border border-[var(--surface-border)] bg-[var(--surface-bg)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono">
-            <button type="button" class="btn-toggle-mask absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1">Show</button>
+            <input type="password" id="input-${providerId}" placeholder="${config.placeholder}" value="${existingKey}" class="w-full pl-3 pr-16 py-1.5 text-xs rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono">
+            <div class="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+              <button type="button" class="btn-paste-key text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1.5 py-0.5 rounded" title="Paste from clipboard">Paste</button>
+              <button type="button" class="btn-toggle-mask text-[10px] text-[var(--text-muted)] hover:text-[var(--text-primary)] px-1.5 py-0.5 rounded">Show</button>
+            </div>
           </div>
-          <button class="btn-validate-provider px-3 py-1.5 rounded-lg bg-[var(--surface-bg)] hover:bg-[var(--surface-border)] border border-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)]" data-provider="${providerId}">
+          <button class="btn-validate-provider px-3 py-1.5 rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-border)] border border-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)] flex-shrink-0" data-provider="${providerId}">
             Validate
           </button>
           ${hasKey ? `
-            <button class="btn-remove-provider p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 ui-transition" data-provider="${providerId}" title="Remove key">
+            <button class="btn-remove-provider p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 ui-transition flex-shrink-0" data-provider="${providerId}" title="Remove key">
               <svg class="w-3.5 h-3.5"><use href="#icon-trash"/></svg>
             </button>
           ` : ''}
         </div>
-        <div class="provider-status-msg text-[11px] hidden pt-1"></div>
+        <div class="provider-status-msg text-[11px] hidden pt-0.5"></div>
       `;
 
       // Set active button
@@ -167,6 +271,22 @@ export class SettingsModal {
         });
       }
 
+      // Paste button
+      const pasteBtn = row.querySelector('.btn-paste-key');
+      if (input && pasteBtn) {
+        pasteBtn.addEventListener('click', async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+              input.value = text.trim();
+              input.focus();
+            }
+          } catch (err) {
+            console.warn('Clipboard read failed:', err);
+          }
+        });
+      }
+
       // Validate button
       const valBtn = row.querySelector('.btn-validate-provider');
       const statusMsg = row.querySelector('.provider-status-msg');
@@ -174,7 +294,7 @@ export class SettingsModal {
         valBtn.addEventListener('click', async () => {
           const keyVal = input.value.trim();
           if (!keyVal) {
-            statusMsg.className = 'provider-status-msg text-[11px] text-rose-500 pt-1';
+            statusMsg.className = 'provider-status-msg text-[11px] text-rose-500 pt-0.5';
             statusMsg.textContent = 'Please enter an API key.';
             statusMsg.classList.remove('hidden');
             return;
@@ -183,7 +303,7 @@ export class SettingsModal {
           valBtn.disabled = true;
           const orig = valBtn.textContent;
           valBtn.textContent = 'Checking...';
-          statusMsg.className = 'provider-status-msg text-[11px] text-[var(--text-muted)] pt-1';
+          statusMsg.className = 'provider-status-msg text-[11px] text-[var(--text-muted)] pt-0.5';
           statusMsg.textContent = 'Querying provider /models endpoint...';
           statusMsg.classList.remove('hidden');
 
@@ -193,10 +313,10 @@ export class SettingsModal {
             const cached = { ...store.getState().cachedModels, [providerId]: models };
             store.setState({ cachedModels: cached });
 
-            statusMsg.className = 'provider-status-msg text-[11px] text-emerald-500 pt-1';
+            statusMsg.className = 'provider-status-msg text-[11px] text-emerald-500 pt-0.5';
             statusMsg.textContent = `Valid! Loaded ${models.length} compatible models.`;
           } catch (err) {
-            statusMsg.className = 'provider-status-msg text-[11px] text-rose-500 pt-1';
+            statusMsg.className = 'provider-status-msg text-[11px] text-rose-500 pt-0.5';
             statusMsg.textContent = `Error: ${err.message}`;
           } finally {
             valBtn.disabled = false;
@@ -217,9 +337,80 @@ export class SettingsModal {
     }
   }
 
+  wireSearchTestTool() {
+    const testBtn = document.getElementById('btn-test-search-query');
+    const inputEl = document.getElementById('test-search-query-input');
+    const resultsEl = document.getElementById('test-search-results');
+
+    if (!testBtn || !inputEl || !resultsEl) return;
+
+    testBtn.addEventListener('click', async () => {
+      const q = inputEl.value.trim();
+      if (!q) return;
+
+      testBtn.disabled = true;
+      testBtn.textContent = 'Searching...';
+      resultsEl.classList.remove('hidden');
+      resultsEl.innerHTML = '<div class="text-[var(--text-muted)]">Querying DuckDuckGo + Wikipedia...</div>';
+
+      try {
+        const { context, sources } = await SearchService.executeSearch(q, store.getState().apiKeys.tavily);
+        if (sources.length > 0) {
+          let html = `<div class="font-semibold text-emerald-400">Found ${sources.length} live sources:</div>`;
+          sources.slice(0, 3).forEach(s => {
+            html += `<div class="truncate"><a href="${s.url}" target="_blank" class="text-[var(--accent-cyan)] hover:underline">${escapeHtml(s.title)}</a>: <span class="text-[var(--text-muted)]">${escapeHtml(s.snippet.slice(0, 90))}...</span></div>`;
+          });
+          resultsEl.innerHTML = html;
+        } else {
+          resultsEl.innerHTML = `<div class="text-[var(--text-muted)]">Search completed with no direct answers.</div>`;
+        }
+      } catch (err) {
+        resultsEl.innerHTML = `<div class="text-rose-400">Search error: ${err.message}</div>`;
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Search';
+      }
+    });
+  }
+
+  updateStorageStats() {
+    const state = store.getState();
+    const keyCount = Object.keys(state.apiKeys || {}).filter(k => Boolean(state.apiKeys[k])).length;
+    const chatCount = (state.chats || []).length;
+    let modelCount = 0;
+    Object.values(state.cachedModels || {}).forEach(arr => {
+      if (Array.isArray(arr)) modelCount += arr.length;
+    });
+
+    const elKeys = document.getElementById('stat-saved-keys');
+    const elChats = document.getElementById('stat-active-chats');
+    const elModels = document.getElementById('stat-cached-models');
+
+    if (elKeys) elKeys.textContent = String(keyCount);
+    if (elChats) elChats.textContent = String(chatCount);
+    if (elModels) elModels.textContent = String(modelCount);
+  }
+
+  wireExportChats() {
+    const btn = document.getElementById('btn-export-chats');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      const chats = store.getState().chats || [];
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(chats, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', `askbot-chats-${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
   open() {
     if (this.modalEl) {
       this.renderProviders();
+      this.updateStorageStats();
       this.modalEl.classList.remove('hidden');
     }
   }

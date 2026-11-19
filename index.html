@@ -143,26 +143,69 @@
     </header>
 
     <!-- Conversational Canvas -->
-    <main id="chat-canvas" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 relative">
-      <!-- Empty State: Dynamic Greeting & Suggestions -->
-      <div id="empty-state" class="max-w-2xl mx-auto h-full flex flex-col justify-center items-center text-center py-12">
-        <h1 id="greeting-heading" class="text-3xl md:text-4xl font-semibold tracking-tight text-[var(--text-primary)] mb-2">
-          Good evening
-        </h1>
-        <p class="text-sm md:text-base text-[var(--text-muted)] mb-8 max-w-md">
-          How can I assist your workflow today?
-        </p>
+    <main id="chat-canvas" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 md:py-6 relative flex flex-col items-center">
+      
+      <!-- Subtle Foggy Glass Panel for Ultra-Clean Text Legibility -->
+      <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-3xl my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
+        <!-- Empty State: Dynamic Greeting & Suggestions -->
+        <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
+          <h1 id="greeting-heading" class="text-3xl md:text-4xl font-semibold tracking-tight text-[var(--text-primary)] mb-2">
+            Good evening
+          </h1>
+          <p class="text-sm md:text-base text-[var(--text-muted)] mb-8 max-w-md">
+            How can I assist your workflow today?
+          </p>
 
-        <!-- 4 Randomized Action Chips -->
-        <div id="suggestion-chips-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-left">
-          <!-- Suggestion chips will be injected here -->
+          <!-- 4 Randomized Action Chips -->
+          <div id="suggestion-chips-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-left">
+            <!-- Suggestion chips will be injected here -->
+          </div>
+        </div>
+
+        <!-- Active Message List -->
+        <div id="messages-container" class="w-full space-y-6 hidden">
+          <!-- Message items rendered here -->
         </div>
       </div>
 
-      <!-- Active Message List -->
-      <div id="messages-container" class="max-w-3xl mx-auto space-y-6 hidden">
-        <!-- Message items rendered here -->
-      </div>
+      <!-- Chat Section Output Navigation Rail -->
+      <aside id="chat-nav-rail" class="hidden xl:flex fixed right-4 top-24 bottom-28 w-11 flex-col items-center justify-between py-2.5 rounded-2xl chat-nav-rail z-20 ui-transition opacity-0 pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto shadow-lg" title="Chat Navigation Rail">
+        <div class="flex flex-col items-center gap-2">
+          <!-- Scroll to top -->
+          <button id="btn-rail-top" class="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to top">
+            <svg class="w-3.5 h-3.5"><use href="#icon-chevron-down" style="transform: rotate(180deg); transform-origin: center;"/></svg>
+          </button>
+          
+          <div class="w-5 h-[1px] bg-[var(--surface-border)]"></div>
+          
+          <!-- Quick Jump Filters for Different Outputs -->
+          <button id="btn-rail-jump-code" class="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 ui-transition relative hidden" title="Jump to next Python Code execution">
+            <svg class="w-3.5 h-3.5"><use href="#icon-python"/></svg>
+            <span id="rail-badge-code" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+          </button>
+          <button id="btn-rail-jump-search" class="p-1.5 rounded-lg text-sky-400 hover:bg-sky-500/10 ui-transition relative hidden" title="Jump to next Web Search citations">
+            <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
+            <span id="rail-badge-search" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-sky-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+          </button>
+          <button id="btn-rail-jump-thought" class="p-1.5 rounded-lg text-amber-400 hover:bg-amber-500/10 ui-transition relative hidden" title="Jump to next Thought Process">
+            <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
+            <span id="rail-badge-thought" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+          </button>
+        </div>
+
+        <!-- Scrollable Vertical Track of Message Turn Dots -->
+        <div id="rail-turns-track" class="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-center gap-3 w-full">
+          <!-- Dynamic turn dots with prompt tooltips -->
+        </div>
+
+        <div class="flex flex-col items-center gap-2">
+          <div class="w-5 h-[1px] bg-[var(--surface-border)]"></div>
+          <!-- Scroll to latest -->
+          <button id="btn-rail-bottom" class="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to latest">
+            <svg class="w-3.5 h-3.5"><use href="#icon-chevron-down"/></svg>
+          </button>
+        </div>
+      </aside>
     </main>
 
     <!-- Floating Pill Composer -->
@@ -349,52 +392,157 @@
 
   <!-- ==================== SETTINGS MODAL ==================== -->
   <div id="settings-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
-    <div class="modal-card w-full max-w-lg rounded-2xl p-6 relative text-[var(--text-primary)] flex flex-col max-h-[90vh]">
+    <div class="modal-card w-full max-w-xl rounded-2xl p-6 relative text-[var(--text-primary)] flex flex-col max-h-[90vh]">
       <div class="flex items-center justify-between pb-3 border-b border-[var(--surface-border)]">
         <div class="flex items-center gap-2">
           <svg class="w-5 h-5 text-[var(--accent-blue)]"><use href="#icon-gear"/></svg>
-          <h2 class="text-sm font-semibold">Settings & API Keys</h2>
+          <div>
+            <h2 class="text-sm font-semibold">Settings & Configuration</h2>
+            <p class="text-[10px] text-[var(--text-muted)]">Client-side BYOK architecture</p>
+          </div>
         </div>
-        <button id="btn-close-settings" class="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition">
+        <button id="btn-close-settings" class="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Close settings">
           <svg class="w-4 h-4"><use href="#icon-close"/></svg>
         </button>
       </div>
 
-      <!-- Settings Content -->
-      <div class="flex-1 overflow-y-auto py-4 space-y-4 text-xs">
-        <div class="p-3 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] text-xs text-[var(--text-muted)] leading-relaxed">
-          <strong class="text-[var(--text-primary)]">Privacy Notice:</strong> All API keys are stored exclusively in your browser's <code class="text-[var(--accent-blue)]">localStorage</code>. Every API request is made directly from your browser to each respective provider.
-        </div>
-
-        <!-- Providers List -->
-        <div class="space-y-3" id="settings-providers-list">
-          <!-- Dynamically populated provider key inputs -->
-        </div>
-
-        <!-- Web Search Provider Info & Key -->
-        <div class="p-3.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-2">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold text-xs text-[var(--text-primary)]">Web Search Connection</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">Free Grounding Active</span>
-            </div>
-          </div>
-          <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
-            By default, AskBOT uses free, keyless client-side web grounding via DuckDuckGo + Wikipedia. You can also optionally provide a Tavily API key for deeper web retrieval.
-          </p>
-          <div class="flex gap-2 pt-1">
-            <input type="password" id="key-input-tavily" placeholder="Tavily API Key (Optional: tvly-...)" class="flex-1 px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono">
-            <button id="btn-save-tavily" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] font-medium text-xs ui-transition text-[var(--text-primary)]">Save</button>
-          </div>
-        </div>
+      <!-- Segmented Tab Navigation Bar -->
+      <div class="flex items-center gap-1 p-1 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] mt-3 mb-1 text-xs">
+        <button id="tab-btn-providers" class="tab-btn-settings active flex-1 py-1.5 px-3 rounded-lg font-medium text-center ui-transition flex items-center justify-center gap-1.5" data-tab="providers">
+          <svg class="w-3.5 h-3.5"><use href="#icon-sliders"/></svg>
+          <span>AI Providers</span>
+        </button>
+        <button id="tab-btn-grounding" class="tab-btn-settings flex-1 py-1.5 px-3 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="grounding">
+          <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
+          <span>Web Grounding</span>
+        </button>
+        <button id="tab-btn-storage" class="tab-btn-settings flex-1 py-1.5 px-3 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="storage">
+          <svg class="w-3.5 h-3.5"><use href="#icon-check"/></svg>
+          <span>Storage & Privacy</span>
+        </button>
       </div>
 
-      <div class="pt-3 border-t border-[var(--surface-border)] flex items-center justify-between">
-        <button id="btn-clear-all-data" class="text-xs text-rose-500 hover:text-rose-600 font-medium ui-transition flex items-center gap-1">
-          <svg class="w-3.5 h-3.5"><use href="#icon-trash"/></svg>
-          <span>Clear All Local Data</span>
-        </button>
-        <button id="btn-save-close-settings" class="px-4 py-1.5 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition shadow-sm">
+      <!-- Settings Tab Panels -->
+      <div class="flex-1 overflow-y-auto py-3 space-y-4 text-xs">
+        
+        <!-- Tab 1: AI Providers -->
+        <div id="tab-panel-providers" class="space-y-3.5">
+          <!-- Active Provider Selector Pills -->
+          <div class="p-3 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)]">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Active Provider</span>
+              <span class="text-[10px] text-[var(--text-muted)]">Select active LLM engine</span>
+            </div>
+            <div id="quick-active-provider-pills" class="flex items-center gap-1.5 flex-wrap">
+              <!-- Dynamically populated provider quick pills -->
+            </div>
+          </div>
+
+          <!-- Privacy Notice -->
+          <div class="p-2.5 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] text-[11px] text-[var(--text-muted)] leading-relaxed">
+            <strong class="text-[var(--text-primary)]">BYOK Privacy:</strong> All keys remain securely in your browser's <code class="text-[var(--accent-blue)]">localStorage</code> and make direct browser-to-provider API calls.
+          </div>
+
+          <!-- Providers List -->
+          <div class="space-y-3" id="settings-providers-list">
+            <!-- Dynamically populated provider key inputs -->
+          </div>
+        </div>
+
+        <!-- Tab 2: Web Grounding -->
+        <div id="tab-panel-grounding" class="space-y-3.5 hidden">
+          <!-- Free Web Grounding Card -->
+          <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-semibold text-xs text-[var(--text-primary)]">Free DuckDuckGo & Wikipedia Grounding</span>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-medium">Default Free</span>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              AskBOT includes automatic zero-setup web search grounding using DuckDuckGo Instant Answers and Wikipedia REST APIs (<code class="text-[var(--accent-cyan)]">origin=*</code>). It automatically retrieves live snippets and citations without any API key or subscription.
+            </p>
+            
+            <!-- Quick Live Test Tool -->
+            <div class="pt-2 border-t border-[var(--surface-border)]">
+              <label class="block text-[11px] font-medium text-[var(--text-secondary)] mb-1.5">Test Live Search Connection</label>
+              <div class="flex gap-2">
+                <input type="text" id="test-search-query-input" placeholder="e.g. Latest Artemis moon mission..." value="James Webb Space Telescope discoveries" class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-cyan)]">
+                <button id="btn-test-search-query" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-border)] border border-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)]">
+                  Test Search
+                </button>
+              </div>
+              <div id="test-search-results" class="mt-2 text-[11px] hidden p-2 rounded-lg bg-[var(--surface-card)] border border-[var(--surface-border)] space-y-1"></div>
+            </div>
+          </div>
+
+          <!-- Optional Tavily Key Card -->
+          <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[var(--accent-cyan)]"><use href="#icon-search"/></svg>
+                <span class="font-semibold text-xs text-[var(--text-primary)]">Tavily Search API (Optional)</span>
+              </div>
+              <a href="https://tavily.com" target="_blank" rel="noopener noreferrer" class="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)]">Get Tavily key &rarr;</a>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              If you have a Tavily API key, AskBOT can optionally use it for deep web crawling alongside the free grounding.
+            </p>
+            <div class="flex gap-2 pt-1">
+              <input type="password" id="key-input-tavily" placeholder="tvly-..." class="flex-1 px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono text-xs">
+              <button id="btn-save-tavily" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] hover:bg-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)]">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Storage & Privacy -->
+        <div id="tab-panel-storage" class="space-y-3.5 hidden">
+          <!-- Storage Stats -->
+          <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-3">
+            <h3 class="font-semibold text-xs text-[var(--text-primary)]">Local Storage Inventory</h3>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="p-2.5 rounded-lg bg-[var(--surface-card)] border border-[var(--surface-border)]">
+                <div id="stat-saved-keys" class="text-base font-bold text-[var(--accent-blue)]">0</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Saved Keys</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-[var(--surface-card)] border border-[var(--surface-border)]">
+                <div id="stat-active-chats" class="text-base font-bold text-[var(--accent-cyan)]">0</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Saved Chats</div>
+              </div>
+              <div class="p-2.5 rounded-lg bg-[var(--surface-card)] border border-[var(--surface-border)]">
+                <div id="stat-cached-models" class="text-base font-bold text-emerald-400">0</div>
+                <div class="text-[10px] text-[var(--text-muted)]">Models Cached</div>
+              </div>
+            </div>
+            
+            <div class="pt-2 flex items-center justify-between border-t border-[var(--surface-border)]">
+              <span class="text-[11px] text-[var(--text-muted)]">Export conversation history</span>
+              <button id="btn-export-chats" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] hover:bg-[var(--surface-border)] text-xs font-medium text-[var(--text-primary)] ui-transition">
+                Export JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 space-y-2">
+            <h3 class="font-semibold text-xs text-rose-500">Danger Zone</h3>
+            <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              Permanently erase all stored API keys, cached models, and conversation logs from this browser's local storage.
+            </p>
+            <div class="pt-1">
+              <button id="btn-clear-all-data" class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 text-xs font-medium ui-transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5"><use href="#icon-trash"/></svg>
+                <span>Clear All Local Data</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-[var(--surface-border)] flex items-center justify-end">
+        <button id="btn-save-close-settings" class="px-5 py-1.5 rounded-xl bg-[var(--accent-blue)] text-white text-xs font-medium hover:bg-[var(--accent-blue-hover)] ui-transition shadow-sm">
           Done
         </button>
       </div>

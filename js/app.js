@@ -13,6 +13,7 @@ import { FileManager } from './ui/components/file-manager.js';
 import { OnboardingModal } from './ui/components/onboarding-modal.js';
 import { SettingsModal } from './ui/components/settings-modal.js';
 import { BackgroundEffects } from './ui/components/background-effects.js';
+import { ChatNavRail } from './ui/components/chat-nav-rail.js';
 
 class AppCoordinator {
   constructor() {
@@ -26,6 +27,7 @@ class AppCoordinator {
     // 1. Initialize UI Subsystems
     BackgroundEffects.init();
     this.parametersDrawer = new ParametersDrawer();
+    this.chatNavRail = new ChatNavRail();
     this.fileManager = new FileManager();
     this.messagesComponent = new MessagesComponent();
 
@@ -293,6 +295,9 @@ class AppCoordinator {
   startNewChat() {
     store.setState({ currentChatId: null });
     this.messagesComponent.render([]);
+    if (this.chatNavRail) {
+      this.chatNavRail.update([]);
+    }
   }
 
   selectChat(chatId) {
@@ -301,10 +306,10 @@ class AppCoordinator {
 
   refreshCurrentChat() {
     const currentChat = store.getCurrentChat();
-    if (currentChat && currentChat.messages && currentChat.messages.length > 0) {
-      this.messagesComponent.render(currentChat.messages);
-    } else {
-      this.messagesComponent.render([]);
+    const messages = (currentChat && currentChat.messages) ? currentChat.messages : [];
+    this.messagesComponent.render(messages);
+    if (this.chatNavRail) {
+      this.chatNavRail.update(messages);
     }
   }
 
