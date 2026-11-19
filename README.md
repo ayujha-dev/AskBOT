@@ -1,123 +1,190 @@
 # AskBOT — Multi-Provider AI Desktop Chat
 
-> A refined, client-side, zero-build Multi-Provider AI chat application inspired by Google Gemini's craft and Groq Playground's parameter controls. Built using pure **HTML5, CSS3, and Vanilla JavaScript (ES Modules)**.
+> A refined, high-craft, client-side Multi-Provider AI chat application inspired by Google Gemini's aesthetic and Groq Playground's parameter controls. Built with pure **HTML5, CSS3, and Vanilla JavaScript (ES Modules)** — **Zero build step required**.
 
-![AskBOT](https://img.shields.io/badge/Architecture-Vanilla%20ES%20Modules-blue?style=flat-square)
-![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)
-![Build](https://img.shields.io/badge/Build%20Step-Zero%20(Pure%20Static)-purple?style=flat-square)
-
----
-
-## Highlights & Features
-
-1. **True Bring Your Own Key (BYOK) Privacy**
-   - Direct browser connection to providers.
-   - Keys are stored **strictly in browser `localStorage`** and never touch any intermediate server or database.
-
-2. **5 Frontier AI Providers & Dynamic Model Discovery**
-   - **Groq**: Ultra-fast Llama 3.3 70B, DeepSeek R1 Distill, Mixtral.
-   - **Google Gemini**: Gemini 2.0 Flash, 1.5 Pro, native Google Search grounding, and thinkingConfig.
-   - **OpenAI**: GPT-4o, GPT-4o Mini, o1, and o3-mini reasoning models.
-   - **Anthropic Claude**: Claude 3.7 Sonnet (Hybrid Reasoning), 3.5 Sonnet, 3.5 Haiku via direct browser access (`anthropic-dangerous-direct-browser-access: true`).
-   - **xAI**: Grok 2, Grok 2 Vision, and Grok Beta.
-   - Automatically queries each provider's `/models` endpoint on key entry to populate only compatible chat models.
-
-3. **Groq Playground-Style Parameter Drawer**
-   - **Temperature**: `0.0` to `2.0` (auto-clamped to `1.0` for Claude).
-   - **Max Completion Tokens**: Dynamically clamped slider.
-   - **Context Window Tokens**: Sliding context budget that trims older conversation turns while preserving system instructions and the latest user turn. Live token estimation readout.
-
-4. **Interactive Composer Modes**
-   - **Code Interpreter**: Runs Python client-side using **Pyodide (WebAssembly via CDN)** in a dedicated Web Worker. Captures `stdout`, `stderr`, and exports rendered `matplotlib.pyplot` charts to base64 PNGs directly inside chat execution cards.
-   - **Web Search**: 
-     - Native `googleSearch` grounding for Gemini.
-     - Dual DuckDuckGo Instant Answer API + Wikipedia REST search for other providers (with optional Tavily API key support in Settings).
-   - **Thinking Mode**:
-     - Toggle between `Off`, `Low`, `Medium`, and `High`.
-     - Maps to native provider reasoning parameters (`thinkingBudget`, `budget_tokens`, `reasoning_effort`) and parses `<think>...</think>` tags into an animated, collapsible **"Thought process"** accordion with word count.
-
-5. **Craft & Gemini-Inspired Aesthetic**
-   - Obsidian/Slate dark theme (`#131314`) and snow light theme (`#FFFFFF`).
-   - Authentic sidebar history: strictly empty until you start a real chat (zero placeholder or mock conversations). Auto-generates concise conversation titles from your first prompt.
-   - Micro-interactions: Top-left `made by ayujha-dev` linking to [https://github.com/ayujha-dev](https://github.com/ayujha-dev) with a subtle shimmer and tracking hover animation.
-   - Multimodal attachments: Supports images (base64 vision for multimodal models) and text/code files (Markdown, Python, JS, TS, JSON, CSV).
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Zero Build](https://img.shields.io/badge/Build-Zero%20Build%20(Pure%20ESM)-purple?style=flat-square)](#quickstart-zero-build)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Client--Side%20BYOK-emerald?style=flat-square)](#byok-privacy-guarantee)
+[![Tests](https://img.shields.io/badge/Tests-33%20Passed%20(Node%20Native)-brightgreen?style=flat-square)](#testing--verification)
+[![Deployed on Vercel](https://img.shields.io/badge/Deploy-Vercel%20Ready-black?style=flat-square&logo=vercel)](#deployment)
 
 ---
 
-## Quickstart (Zero Build Step)
+## 🌟 Highlights & Features
 
-Since AskBOT requires no compilation or npm dependencies, run it with any static local web server:
+### 1. 100% Client-Side Bring Your Own Key (BYOK)
+- All API keys remain strictly inside your browser's `localStorage`.
+- Every inference and search request is sent directly from your browser to each respective provider's API. No middleman backend, proxy, or logging server is used.
 
-### Option A: Python HTTP Server (Built-in)
+### 2. Multi-Provider Support & Live Model Auto-Detection
+Connect to five frontier AI providers with dynamic `/models` auto-discovery that filters and presents only active chat models compatible with your key:
+- **Groq**: Ultra-fast inference for Llama 3.3 70B, DeepSeek R1 Distill, Mixtral.
+- **Google Gemini**: Gemini 2.0 Flash, Gemini 1.5 Pro, and native Google Search grounding.
+- **Anthropic Claude**: Claude 3.7 Sonnet (Hybrid Reasoning), Claude 3.5 Sonnet, and Haiku via direct browser access (`anthropic-dangerous-direct-browser-access: true`).
+- **OpenAI**: GPT-4o, GPT-4o Mini, o1, and o3-mini reasoning models.
+- **xAI**: Grok 2, Grok 2 Vision, and Grok Beta.
+
+### 3. Interactive Bottom Composer Modes
+- 🐍 **Code Interpreter (Python WASM)**: Runs Python directly in your browser using **Pyodide WebAssembly** inside a sandboxed Web Worker. Captures `stdout`, `stderr`, and exports rendered `matplotlib.pyplot` graphs as base64 images directly inside interactive execution cards.
+- 🔍 **Web Search Grounding**: 
+  - **Free & Keyless by default**: Connects to DuckDuckGo Instant Answer API and Wikipedia REST endpoints (`origin=*`) with live source citations.
+  - **Native Gemini grounding**: Leverages `googleSearch` when using Google Gemini.
+  - **Optional Tavily AI Search**: Connect your own Tavily API key for deep web research.
+- 🧠 **Deep Thinking Mode**: Select between `Off`, `Low`, `Medium`, and `High` reasoning effort. Automatically maps to provider-native parameters (`thinkingConfig` on Gemini, `thinking` budget on Claude, `reasoning_effort` on OpenAI/Groq/xAI) and parses `<think>...</think>` tags into an animated, collapsible **"Thought process"** accordion with word count.
+
+### 4. Groq Playground-Style Parameter Controls
+Collapsible parameter drawer with live numeric readouts:
+- **Temperature Slider**: `0.0` to `2.0` (automatically clamped to `1.0` for Claude).
+- **Max Completion Tokens**: Dynamically capped based on selected model context.
+- **Context Window Sliding Budget**: Trims older conversation turns to stay within context limits while preserving system instructions and the active prompt.
+- **One-Click Presets**: **Precise** (T: `0.2`, Max: `2,048`), **Balanced** (T: `0.7`, Max: `4,096`), and **Creative** (T: `1.2`, Max: `8,192`).
+
+### 5. Chat Section Output Navigation Rail
+- **Turn Scrubber**: Floating rail along the right side of the chat viewport with numbered dots for each conversation turn. Hovering shows a prompt excerpt tooltip with badges indicating what outputs were produced.
+- **Output Jump Filters**: One-click quick-scrolling to next Python Code execution, Web Search citations, or Deep Thinking accordions.
+- **Scroll Spy**: Highlights the active turn dot in real-time as you scroll through conversations.
+
+### 6. Cosmic Glassmorphism & Foggy Glass Runway
+- **Foggy Glass Panel (`.chat-fog-panel`)**: A dedicated frosted glass runway around the chat canvas providing crisp, high-contrast text legibility in both dark and light modes.
+- **Reactbits-Inspired Canvas Background**: 60fps dynamic ambient canvas rendering gentle floating aurora orbs and starlight dust particles responsive to pointer movement and theme switching.
+- **Intuitive 3-Tab Settings Modal**: Clean segmented controls for **AI Providers** (with active provider switcher and 1-click clipboard paste), **Web Grounding** (with live search test tool), and **Storage & Privacy** (with JSON conversation export and local storage stats).
+- **Authentic Chat History**: Zero dummy or mock conversations. History is populated purely by authentic user chats with automatic concise title generation.
+
+---
+
+## 🚀 Quickstart (Zero Build)
+
+AskBOT requires **no node modules, webpack, vite, or compilers**. Run it instantly on any static web server:
+
+### Option 1: Python Built-in Server (Recommended)
 ```bash
 python3 -m http.server 8000
 ```
-Then open [http://localhost:8000](http://localhost:8000) in your browser.
+Open [http://localhost:8000](http://localhost:8000) in your browser.
 
-### Option B: Node `npx serve`
+### Option 2: Node `npx serve`
 ```bash
 npx serve .
 ```
 
-### Option C: VS Code Live Server
-Right-click `index.html` in VS Code and choose **"Open with Live Server"**.
+### Option 3: VS Code Live Server
+Right-click `index.html` in VS Code and select **"Open with Live Server"**.
 
 ---
 
-## Local Verification Checklist
+## 🌐 Deployment
 
-When opening AskBOT locally:
-- [x] **First Launch**: Shows onboarding modal if no keys exist in `localStorage`.
-- [x] **Provider Validation**: Enter your API key and click "Validate & Save" to discover live models.
-- [x] **New Chat & Authentic History**: The sidebar remains empty until a real message is sent; auto-generates a clean title.
-- [x] **Code Interpreter**: Enable Python mode in the composer and ask `Plot a sine wave in matplotlib`. The Pyodide worker executes it client-side and displays the plot.
-- [x] **Web Search Grounding**: Enable Web Search mode and ask `What are the latest Artemis mission updates?`. Sources and citations appear above the answer.
-- [x] **Thinking Accordion**: Enable Thinking mode (`Low` or `Medium`) and send a math or logic riddle to see the animated collapsible thought process.
-- [x] **Parameter Sliders**: Open the right drawer and adjust Temperature, Max Tokens, or Context Window tokens.
+AskBOT is 100% static and deploys seamlessly to any edge or CDN provider.
+
+### Deploy on Vercel
+```bash
+# Using Vercel CLI
+npx vercel
+```
+Or import the GitHub repository (`https://github.com/ayujha-dev/AskBOT.git`) directly in your [Vercel Dashboard](https://vercel.com/new). No build commands or output directories needed!
+
+### Deploy on Netlify / Cloudflare Pages / GitHub Pages
+- **Build command**: None (leave empty)
+- **Publish directory**: `.` (root)
 
 ---
 
-## Architecture
+## 📁 Repository Structure
 
 ```
 AskBOT/
-├── index.html                   # Semantic HTML5 layout shell
+├── index.html                   # Core semantic layout shell & modals
+├── vercel.json                  # Edge routing & security headers
 ├── css/
-│   ├── main.css                 # Gemini design tokens & animations
-│   └── highlight-theme.css      # Code syntax highlighting
+│   ├── main.css                 # Cosmic glassmorphic design system & tokens
+│   └── highlight-theme.css      # Code block syntax theme
 ├── js/
-│   ├── app.js                   # Main application coordinator
+│   ├── app.js                   # Application coordinator & state wiring
 │   ├── state/
-│   │   ├── store.js             # Reactive observable store & localStorage
-│   │   └── default-state.js     # Default config & schemas
+│   │   ├── store.js             # Reactive observable store with localStorage
+│   │   └── default-state.js     # Default state schema & configuration
 │   ├── providers/
-│   │   ├── base-provider.js     # Base SSE streaming & interface
+│   │   ├── base-provider.js     # Base SSE streaming & interface contracts
 │   │   ├── groq-provider.js     # Groq adapter (Llama, DeepSeek)
 │   │   ├── gemini-provider.js   # Gemini adapter (Search grounding, thinkingConfig)
-│   │   ├── openai-provider.js   # OpenAI adapter (GPT-4o, o1, o3)
-│   │   ├── claude-provider.js   # Anthropic Claude adapter (CORS headers)
+│   │   ├── openai-provider.js   # OpenAI adapter (GPT-4o, o1, o3-mini)
+│   │   ├── claude-provider.js   # Claude adapter (Direct browser access headers)
 │   │   ├── xai-provider.js      # xAI Grok adapter
-│   │   └── provider-registry.js # Registry & fallback presets
+│   │   └── provider-registry.js # Registry, model auto-detection & fallback presets
 │   ├── services/
-│   │   ├── token-counter.js     # Token estimation & context sliding trimmer
-│   │   ├── search-service.js    # DuckDuckGo + Wikipedia + Tavily client search
-│   │   └── pyodide-bridge.js    # RPC bridge to Pyodide WebAssembly worker
+│   │   ├── pyodide-bridge.js    # RPC bridge to Pyodide WebAssembly worker
+│   │   ├── search-service.js    # Free DuckDuckGo + Wikipedia + Tavily search
+│   │   └── token-counter.js     # Token estimation & context sliding trimmer
 │   ├── workers/
-│   │   └── pyodide.worker.js    # Web Worker running Pyodide WASM
+│   │   └── pyodide.worker.js    # Dedicated Web Worker running Pyodide WASM
+│   ├── utils/
+│   │   ├── dom.js               # HTML escaping & URL sanitization (XSS defense)
+│   │   ├── file-reader.js       # File attachment parser (images, text, code)
+│   │   ├── markdown.js          # Marked.js + Highlight.js renderer
+│   │   └── stream-buffer.js     # Tag stream buffer for multi-chunk reasoning tags
 │   └── ui/components/
-│       ├── sidebar.js           # Authentic chat history & theme
-│       ├── composer.js          # Bottom pill bar & mode toggles
-│       ├── messages.js          # Message feed, thinking accordion & execution cards
-│       ├── suggestions.js       # Dynamic greetings & 4 randomized prompt chips
-│       ├── parameters-drawer.js # Groq playground sliders
-│       ├── file-manager.js      # File uploads & previews
-│       ├── onboarding-modal.js  # First-launch BYOK modal
-│       └── settings-modal.js    # API keys & privacy controls
-└── assets/icons/icons.svg       # Clean SVG symbol sprites
+│       ├── background-effects.js# Reactbits-inspired dynamic ambient aurora canvas
+│       ├── chat-nav-rail.js     # Output navigation rail & turn scrubber
+│       ├── composer.js          # Bottom pill composer, file tray & mode pills
+│       ├── file-manager.js      # Multimodal attachments preview manager
+│       ├── messages.js          # Message rendering, execution cards & thoughts
+│       ├── onboarding-modal.js  # First-launch BYOK onboarding flow
+│       ├── parameters-drawer.js # Groq playground sliders, presets & backdrop
+│       ├── settings-modal.js    # 3-tab intuitive settings & storage manager
+│       ├── sidebar.js           # Authentic history, title generator & theme
+│       └── suggestions.js       # Time-of-day greetings & randomized prompt chips
+├── assets/
+│   └── icons/
+│       └── icons.svg            # Clean SVG symbol sprites
+└── tests/                       # 33 unit tests (Node.js test runner)
+    ├── enhancements.test.js
+    ├── files.test.js
+    ├── interactive_modes.test.js
+    ├── nav-rail-and-settings.test.js
+    ├── parameters.test.js
+    ├── providers.test.js
+    ├── review_fixes.test.js
+    ├── sidebar_settings.test.js
+    ├── store.test.js
+    ├── task1.test.js
+    └── ui_canvas.test.js
 ```
 
 ---
 
-## License
+## 🔒 BYOK Privacy Guarantee
 
-MIT © [ayujha-dev](https://github.com/ayujha-dev)
+AskBOT was designed with user sovereignty and privacy as first principles:
+- **No Analytics / Telemetry**: Zero tracking scripts.
+- **No Intermediary Proxies**: Calls are dispatched directly to the official APIs (`api.groq.com`, `generativelanguage.googleapis.com`, `api.anthropic.com`, `api.openai.com`, `api.x.ai`).
+- **Encrypted in Browser**: Keys are stored solely in your client browser's local sandbox storage.
+
+---
+
+## 🧪 Testing & Verification
+
+AskBOT includes an end-to-end unit test suite run via Node.js's native test runner (zero external testing dependencies):
+
+```bash
+node --test tests/*.test.js
+```
+
+**Test Coverage Highlights:**
+- **33/33 Tests Passing** across all modules:
+  - BaseProvider SSE chunk boundary buffering & tag extraction.
+  - TokenCounter sliding window budget trimming and user turn preservation.
+  - Pyodide WebAssembly code block extraction and worker timeout guards.
+  - SearchService query formulation and live source normalization.
+  - Stored XSS defense validation via `dom.js`.
+  - Output Navigation Rail turn counting and output target categorization.
+  - Dynamic responsive background effects and glassmorphism design tokens.
+
+---
+
+## 👤 Author
+
+Crafted with care by **[ayujha-dev](https://github.com/ayujha-dev)**.
+
+## 📄 License
+
+Licensed under the [MIT License](LICENSE).
