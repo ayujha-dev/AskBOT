@@ -14,34 +14,26 @@ import { OnboardingModal } from './ui/components/onboarding-modal.js';
 import { SettingsModal } from './ui/components/settings-modal.js';
 import { BackgroundEffects } from './ui/components/background-effects.js';
 import { ChatNavRail } from './ui/components/chat-nav-rail.js';
-import { mountAntigravity } from './antigravity.js';
+import { BackgroundManager } from './backgrounds.js';
 
 class AppCoordinator {
   constructor() {
     this.activeAbortController = null;
     this.isStreaming = false;
-    this.antigravity = null;
+    this.backgroundManager = null;
 
     this.init();
   }
 
+  get antigravity() {
+    return this.backgroundManager?.activeInstance;
+  }
+
   init() {
-    // 1. Initialize Antigravity WebGL2 Particle System
-    const antigravityContainer = document.getElementById('antigravity-bg');
-    if (antigravityContainer) {
-      const isLight = store.getState().theme === 'light';
-      this.antigravity = mountAntigravity(antigravityContainer, {
-        colors: ['#fdbdbd', '#87e0fe', '#ffaa84'],
-        count: 1500,
-        magnetRadius: 9,
-        ringRadius: 7,
-        particleSize: 0.9,
-        autoAnimate: true,
-        ambient: 0.18,
-        lightMode: isLight,
-        opacity: isLight ? 0.35 : 0.42
-      });
-    }
+    // 1. Initialize WebGL2 Background Manager (Galaxy as Default)
+    const bgContainer = document.getElementById('antigravity-bg');
+    this.backgroundManager = new BackgroundManager(bgContainer, store.getState().theme);
+    this.backgroundManager.init();
 
     // 2. Initialize UI Subsystems
     BackgroundEffects.init();
@@ -60,7 +52,9 @@ class AppCoordinator {
       this.handleSuggestionSelect(prompt, mode);
     });
 
-    this.settingsModal = new SettingsModal();
+    this.settingsModal = new SettingsModal({
+      backgroundManager: this.backgroundManager
+    });
 
     this.onboardingModal = new OnboardingModal((provider, modelId) => {
       this.refreshCurrentChat();
@@ -93,11 +87,7 @@ class AppCoordinator {
         this.refreshCurrentChat();
       }
       if (changedKeys.includes('theme')) {
-        const isLight = state.theme === 'light';
-        this.antigravity?.update({
-          lightMode: isLight,
-          opacity: isLight ? 0.35 : 0.42
-        });
+        this.backgroundManager?.handleThemeChange(state.theme);
       }
     });
 

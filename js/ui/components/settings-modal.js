@@ -39,7 +39,8 @@ export class SettingsModal {
     }
   };
 
-  constructor() {
+  constructor(options = {}) {
+    this.backgroundManager = options.backgroundManager || null;
     this.modalEl = document.getElementById('settings-modal');
     this.providersListEl = document.getElementById('settings-providers-list');
     this.quickPillsEl = document.getElementById('quick-active-provider-pills');
@@ -110,6 +111,20 @@ export class SettingsModal {
       });
     }
 
+    // Background selector options
+    const bgButtons = this.modalEl.querySelectorAll('.bg-option-btn');
+    bgButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const bg = btn.getAttribute('data-bg');
+        if (this.backgroundManager) {
+          this.backgroundManager.switchBackground(bg);
+        } else if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('askbot_background', bg);
+        }
+        this.updateBackgroundSelectorUI(bg);
+      });
+    });
+
     // Test live search tool
     this.wireSearchTestTool();
 
@@ -117,12 +132,59 @@ export class SettingsModal {
     this.wireExportChats();
 
     this.renderProviders();
+    this.updateBackgroundSelectorUI(this.getActiveBackground());
 
     store.subscribe((state, changedKeys) => {
       if (changedKeys.includes('apiKeys') || changedKeys.includes('activeProvider')) {
         this.renderProviders();
         this.renderQuickPills();
         this.updateStorageStats();
+      }
+    });
+  }
+
+  getActiveBackground() {
+    if (this.backgroundManager) {
+      return this.backgroundManager.currentMode;
+    }
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('askbot_background') || 'galaxy';
+    }
+    return 'galaxy';
+  }
+
+  updateBackgroundSelectorUI(activeMode) {
+    const mode = activeMode || this.getActiveBackground();
+    const bgButtons = this.modalEl?.querySelectorAll('.bg-option-btn');
+    if (!bgButtons) return;
+
+    bgButtons.forEach(btn => {
+      const isCurrent = btn.getAttribute('data-bg') === mode;
+      const statusLabel = btn.querySelector('.bg-status-label');
+      const statusDot = btn.querySelector('.bg-status-dot');
+
+      if (isCurrent) {
+        btn.classList.add('active');
+        if (statusLabel) {
+          statusLabel.textContent = 'Active';
+          statusLabel.classList.add('text-[var(--accent-blue)]');
+          statusLabel.classList.remove('text-[var(--text-muted)]');
+        }
+        if (statusDot) {
+          statusDot.classList.add('bg-[var(--accent-blue)]');
+          statusDot.classList.remove('bg-zinc-600');
+        }
+      } else {
+        btn.classList.remove('active');
+        if (statusLabel) {
+          statusLabel.textContent = 'Select';
+          statusLabel.classList.remove('text-[var(--accent-blue)]');
+          statusLabel.classList.add('text-[var(--text-muted)]');
+        }
+        if (statusDot) {
+          statusDot.classList.remove('bg-[var(--accent-blue)]');
+          statusDot.classList.add('bg-zinc-600');
+        }
       }
     });
   }
@@ -140,7 +202,7 @@ export class SettingsModal {
       }
     });
 
-    const panels = ['providers', 'grounding', 'storage'];
+    const panels = ['providers', 'grounding', 'background', 'storage'];
     panels.forEach(p => {
       const panelEl = document.getElementById(`tab-panel-${p}`);
       if (panelEl) {
@@ -152,6 +214,9 @@ export class SettingsModal {
       }
     });
 
+    if (tabName === 'background') {
+      this.updateBackgroundSelectorUI(this.getActiveBackground());
+    }
     if (tabName === 'storage') {
       this.updateStorageStats();
     }
@@ -446,6 +511,7 @@ export class SettingsModal {
   open() {
     if (this.modalEl) {
       this.renderProviders();
+      this.updateBackgroundSelectorUI(this.getActiveBackground());
       this.updateStorageStats();
       this.modalEl.classList.remove('hidden');
     }

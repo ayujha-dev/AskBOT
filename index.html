@@ -182,8 +182,8 @@
     <!-- Conversational Canvas -->
     <main id="chat-canvas" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 md:py-6 relative flex flex-col items-center">
       
-      <!-- Subtle Foggy Glass Panel for Ultra-Clean Text Legibility (760px width centered) -->
-      <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-[760px] my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
+      <!-- Centered Open Chat Column (ChatGPT / Claude Style) -->
+      <div id="chat-fog-panel" class="chat-fog-panel w-full min-h-full flex flex-col justify-start relative">
         <!-- Empty State: Dynamic Greeting & Suggestions -->
         <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
           <div class="mb-4 flex flex-col items-center gap-3">
@@ -258,8 +258,8 @@
       </aside>
     </main>
 
-    <!-- Floating Pill Composer (Constrained to 760px) -->
-    <div class="p-4 md:pb-6 flex justify-center flex-shrink-0 z-10 pointer-events-none">
+    <!-- Floating Pill Composer (ChatGPT / Claude Style Floating Overlay) -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 md:pb-6 flex justify-center z-20 pointer-events-none">
       <div id="chat-composer" class="w-full max-w-[760px] composer-box pointer-events-auto p-2.5 flex flex-col gap-2">
         
         <!-- Attached Files Preview Tray -->
@@ -467,17 +467,21 @@
 
       <!-- Segmented Tab Navigation Bar -->
       <div class="flex items-center gap-1 p-1 rounded-xl bg-[var(--surface-panel)] border border-[var(--surface-border)] mt-3 mb-1 text-xs">
-        <button id="tab-btn-providers" class="tab-btn-settings active flex-1 py-1.5 px-3 rounded-lg font-medium text-center ui-transition flex items-center justify-center gap-1.5" data-tab="providers">
+        <button id="tab-btn-providers" class="tab-btn-settings active flex-1 py-1.5 px-2.5 rounded-lg font-medium text-center ui-transition flex items-center justify-center gap-1.5" data-tab="providers">
           <svg class="w-3.5 h-3.5"><use href="#icon-sliders"/></svg>
-          <span>AI Providers</span>
+          <span class="truncate">Providers</span>
         </button>
-        <button id="tab-btn-grounding" class="tab-btn-settings flex-1 py-1.5 px-3 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="grounding">
+        <button id="tab-btn-grounding" class="tab-btn-settings flex-1 py-1.5 px-2.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="grounding">
           <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
-          <span>Web Grounding</span>
+          <span class="truncate">Grounding</span>
         </button>
-        <button id="tab-btn-storage" class="tab-btn-settings flex-1 py-1.5 px-3 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="storage">
+        <button id="tab-btn-background" class="tab-btn-settings flex-1 py-1.5 px-2.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="background">
+          <svg class="w-3.5 h-3.5"><use href="#icon-sparkles"/></svg>
+          <span class="truncate">Background</span>
+        </button>
+        <button id="tab-btn-storage" class="tab-btn-settings flex-1 py-1.5 px-2.5 rounded-lg font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] text-center ui-transition flex items-center justify-center gap-1.5" data-tab="storage">
           <svg class="w-3.5 h-3.5"><use href="#icon-check"/></svg>
-          <span>Storage & Privacy</span>
+          <span class="truncate">Storage</span>
         </button>
       </div>
 
@@ -594,7 +598,74 @@
           </div>
         </div>
 
-        <!-- Tab 3: Storage & Privacy -->
+        <!-- Tab 3: Background Selector -->
+        <div id="tab-panel-background" class="space-y-3.5 hidden">
+          <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-[var(--text-primary)]">Interactive WebGL2 Canvas</span>
+              <span class="text-[10px] text-[var(--text-muted)] font-mono">Real-Time GPU Shaders</span>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              Select your ambient cosmic background effect. All shaders dynamically recalibrate when switching between Dark and Light mode, ensuring high-contrast text readability and soft aesthetic diffusion behind foggy glass panels.
+            </p>
+          </div>
+
+          <!-- Background Options Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="background-selector-group">
+            <!-- Galaxy (Default) -->
+            <button type="button" class="bg-option-btn active p-3 rounded-xl border text-left ui-transition flex flex-col justify-between" data-bg="galaxy">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-semibold text-xs text-[var(--text-primary)]">Galaxy</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded-full font-mono bg-sky-500/10 text-sky-400 font-medium">Default</span>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  Deep cosmic starfield with 3-layer parallax, optical warp, and cosmic ink in light mode.
+                </p>
+              </div>
+              <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-[var(--surface-border)] text-[10px]">
+                <span class="bg-status-label font-medium text-[var(--accent-blue)]">Active</span>
+                <span class="w-2 h-2 rounded-full bg-[var(--accent-blue)] bg-status-dot"></span>
+              </div>
+            </button>
+
+            <!-- Antigravity -->
+            <button type="button" class="bg-option-btn p-3 rounded-xl border text-left ui-transition flex flex-col justify-between" data-bg="antigravity">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-semibold text-xs text-[var(--text-primary)]">Antigravity</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded-full font-mono bg-indigo-500/10 text-indigo-400 font-medium">Physics</span>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  OKLab color-interpolated particle ring with spring physics, cursor following, and click bursts.
+                </p>
+              </div>
+              <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-[var(--surface-border)] text-[10px]">
+                <span class="bg-status-label font-medium text-[var(--text-muted)]">Select</span>
+                <span class="w-2 h-2 rounded-full bg-zinc-600 bg-status-dot"></span>
+              </div>
+            </button>
+
+            <!-- None -->
+            <button type="button" class="bg-option-btn p-3 rounded-xl border text-left ui-transition flex flex-col justify-between" data-bg="none">
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="font-semibold text-xs text-[var(--text-primary)]">None</span>
+                  <span class="text-[9px] px-1.5 py-0.5 rounded-full font-mono bg-zinc-500/10 text-zinc-400 font-medium">Minimal</span>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  Clean, static matte canvas without active GPU particle animation.
+                </p>
+              </div>
+              <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-[var(--surface-border)] text-[10px]">
+                <span class="bg-status-label font-medium text-[var(--text-muted)]">Select</span>
+                <span class="w-2 h-2 rounded-full bg-zinc-600 bg-status-dot"></span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 4: Storage & Privacy -->
         <div id="tab-panel-storage" class="space-y-3.5 hidden">
           <!-- Storage Stats -->
           <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-3">
