@@ -58,6 +58,7 @@ export class FileManager {
       const activeEl = document.activeElement;
       const isInput = activeEl && activeEl.tagName === 'INPUT';
       const isOtherTextarea = activeEl && activeEl.tagName === 'TEXTAREA' && activeEl.id !== 'composer-textarea';
+      if (isInput || isOtherTextarea) return;
 
       const clipboard = e.clipboardData;
       if (!clipboard) return;

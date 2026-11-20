@@ -96,13 +96,14 @@ export class OpenAIProvider extends BaseProvider {
   }
 
   async streamChat({ apiKey, messages, model, parameters, modes, onChunk, onThinking, signal }) {
+    const modelId = model || 'gpt-4o';
     const payload = {
-      model: model || 'gpt-4o',
+      model: modelId,
       messages: this.formatMessages(messages),
       stream: true
     };
 
-    const isReasoning = model.startsWith('o1') || model.startsWith('o3');
+    const isReasoning = modelId.startsWith('o1') || modelId.startsWith('o3');
 
     if (isReasoning) {
       if (modes.thinkingLevel && modes.thinkingLevel !== 'off') {

@@ -42,7 +42,8 @@ export class ProviderRegistry {
         { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', contextWindow: 32768, supportsVision: false, supportsThinking: false }
       ],
       gemini: [
-        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', contextWindow: 1048576, supportsVision: true, supportsThinking: true },
+        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', contextWindow: 1048576, supportsVision: true, supportsThinking: false },
+        { id: 'gemini-2.0-flash-thinking-exp-01-21', name: 'Gemini 2.0 Flash Thinking Exp', contextWindow: 1048576, supportsVision: true, supportsThinking: true },
         { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', contextWindow: 2097152, supportsVision: true, supportsThinking: false },
         { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', contextWindow: 1048576, supportsVision: true, supportsThinking: false }
       ],

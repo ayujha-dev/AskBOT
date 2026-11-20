@@ -55,7 +55,10 @@ export class GeminiProvider extends BaseProvider {
 
     for (const msg of messages) {
       if (msg.role === 'system') {
-        systemInstruction = { parts: [{ text: msg.content }] };
+        if (!systemInstruction) {
+          systemInstruction = { parts: [] };
+        }
+        systemInstruction.parts.push({ text: msg.content });
         continue;
       }
 
@@ -122,8 +125,8 @@ export class GeminiProvider extends BaseProvider {
       payload.tools = [{ googleSearch: {} }];
     }
 
-    // Native thinkingConfig for Gemini models supporting reasoning
-    const isThinkingSupported = modelId.includes('2.0') || modelId.includes('2.5') || modelId.includes('thinking');
+    // Native thinkingConfig for Gemini models supporting reasoning (e.g. gemini-2.0-flash-thinking-exp or 2.5)
+    const isThinkingSupported = modelId.includes('thinking') || modelId.includes('2.5');
     if (isThinkingSupported && modes.thinkingLevel && modes.thinkingLevel !== 'off') {
       const budgetMap = { low: 1024, medium: 4096, high: 8192 };
       payload.generationConfig.thinkingConfig = {

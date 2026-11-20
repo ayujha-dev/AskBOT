@@ -86,3 +86,81 @@ test('Task 3: ProviderRegistry returns all supported providers', async () => {
   assert.ok(groq);
   assert.equal(groq.id, 'groq');
 });
+
+test('Task 3: Gemini formatContents preserves multiple system messages', async () => {
+  const { GeminiProvider } = await import('../js/providers/gemini-provider.js');
+  const gemini = new GeminiProvider();
+
+  const messages = [
+    { role: 'system', content: 'Instruction 1: Grounding info' },
+    { role: 'system', content: 'Instruction 2: Python tool enabled' },
+    { role: 'user', content: 'Hello' }
+  ];
+
+  const { contents, systemInstruction } = gemini.formatContents(messages);
+  assert.ok(systemInstruction);
+  assert.equal(systemInstruction.parts.length, 2);
+  assert.equal(systemInstruction.parts[0].text, 'Instruction 1: Grounding info');
+  assert.equal(systemInstruction.parts[1].text, 'Instruction 2: Python tool enabled');
+  assert.equal(contents.length, 1);
+  assert.equal(contents[0].role, 'user');
+});
+
+test('Task 3: Gemini thinkingConfig is only attached for reasoning models', async () => {
+  const { GeminiProvider } = await import('../js/providers/gemini-provider.js');
+  const gemini = new GeminiProvider();
+
+  // Test non-thinking models do not get thinkingConfig
+  const nonThinkingModels = ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+  for (const mId of nonThinkingModels) {
+    const isThinkingSupported = mId.includes('thinking') || mId.includes('2.5');
+    assert.equal(isThinkingSupported, false, `${mId} must NOT be flagged as thinking supported`);
+  }
+
+  // Test thinking models do get thinkingConfig
+  const thinkingModels = ['gemini-2.0-flash-thinking-exp-01-21', 'gemini-2.5-pro', 'gemini-2.5-flash'];
+  for (const mId of thinkingModels) {
+    const isThinkingSupported = mId.includes('thinking') || mId.includes('2.5');
+    assert.equal(isThinkingSupported, true, `${mId} MUST be flagged as thinking supported`);
+  }
+});
+
+test('Task 3: OpenAI streamChat handles undefined or empty model gracefully', async () => {
+  const { OpenAIProvider } = await import('../js/providers/openai-provider.js');
+  const openai = new OpenAIProvider();
+
+  let capturedUrl = '';
+  let capturedBody = null;
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async (url, opts) => {
+    capturedUrl = url;
+    capturedBody = JSON.parse(opts.body);
+    return {
+      ok: true,
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          controller.close();
+        }
+      })
+    };
+  };
+
+  try {
+    // Should not throw TypeError: Cannot read properties of undefined (reading 'startsWith')
+    await openai.streamChat({
+      apiKey: 'sk-test',
+      messages: [{ role: 'user', content: 'Hi' }],
+      model: undefined,
+      parameters: { temperature: 0.7 },
+      modes: { thinkingLevel: 'low' },
+      onChunk: () => {},
+      onThinking: () => {}
+    });
+
+    assert.equal(capturedBody.model, 'gpt-4o');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

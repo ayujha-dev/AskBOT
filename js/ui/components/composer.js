@@ -59,6 +59,7 @@ export class ComposerComponent {
 
       if (files.length > 0 && this.fileManager) {
         e.preventDefault();
+        e.stopImmediatePropagation();
         await this.fileManager.handleFiles(files);
         this.updateSendButtonState();
       }

@@ -357,180 +357,191 @@ class AppCoordinator {
   async handleSendMessage(userPrompt) {
     if (this.isStreaming) return;
 
-    const state = store.getState();
-    const { activeProvider, selectedModel, apiKeys, parameters, modes } = state;
-    const apiKey = apiKeys[activeProvider];
-
-    // Ensure user has configured the active provider's API key
-    if (!apiKey) {
-      this.onboardingModal.open(activeProvider);
-      return;
-    }
-
-    // 1. Ensure active chat exists
-    let chatId = state.currentChatId;
-    if (!chatId) {
-      const newChat = store.createChat(SidebarComponent.generateTitle(userPrompt));
-      chatId = newChat.id;
-      store.selectChat(chatId);
-    } else {
-      const currentChat = store.getChat(chatId);
-      if (currentChat && (!currentChat.messages || currentChat.messages.length === 0)) {
-        store.updateChat(chatId, { title: SidebarComponent.generateTitle(userPrompt) });
-      }
-    }
-
-    // 2. Extract attachments and clear tray
-    const attachments = this.fileManager.getAttachments();
-    const hasVideo = attachments.some(a => a.type === 'video');
-    if (hasVideo && activeProvider !== 'gemini') {
-      alert(`Video analysis is currently supported natively by Google Gemini (Gemini 2.0 Flash / 1.5 Pro). Please switch your provider to Gemini in the composer model selector to analyze video clips.`);
-      return;
-    }
-
-    this.fileManager.clear();
-
-    // 3. Save user message to store
-    store.addMessage(chatId, {
-      role: 'user',
-      content: userPrompt,
-      attachments
-    });
-
-    // 4. Update UI view
-    this.refreshCurrentChat();
-
-    // 5. Setup streaming assistant placeholder
-    const assistantMsgId = 'msg_' + Date.now();
-    const streamingHandle = this.messagesComponent.createStreamingMessage(assistantMsgId);
-
-    // 6. Handle Web Search Grounding for non-Gemini providers (Gemini uses native googleSearch tool)
-    let searchSources = [];
-    let searchAugmentedPrompt = userPrompt;
-
-    if (modes.webSearch && activeProvider !== 'gemini') {
-      const isBrave = Boolean(apiKeys.brave || apiKeys.braveProxyUrl);
-      streamingHandle.showSearchingStatus(isBrave ? 'Brave' : 'Web');
-      try {
-        searchSources = await SearchService.search(userPrompt, {
-          braveApiKey: apiKeys.brave,
-          braveProxyUrl: apiKeys.braveProxyUrl,
-          tavilyApiKey: apiKeys.tavily
-        });
-        if (searchSources.length > 0) {
-          const contextSnippet = SearchService.formatSearchContext(searchSources);
-          searchAugmentedPrompt = `${contextSnippet}\nUser Query: ${userPrompt}`;
-        }
-      } catch (err) {
-        console.warn('Web search grounding error:', err);
-      } finally {
-        streamingHandle.hideSearchingStatus();
-      }
-    }
-
-    // 7. Build outgoing message history
-    const currentMessages = store.getChat(chatId).messages;
-    const outgoingMessages = currentMessages.map((m, index) => {
-      if (index === currentMessages.length - 1 && searchAugmentedPrompt !== userPrompt) {
-        return { ...m, content: searchAugmentedPrompt };
-      }
-      return m;
-    });
-
-    // If Search Mode is on, inject exact current date and grounding instructions
-    if (modes.webSearch) {
-      const todayDateStr = new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-      outgoingMessages.unshift({
-        role: 'system',
-        content: `Today is ${todayDateStr}. Real-time web search results are provided in <web_search_results>. Prioritize the <web_search_results> over internal cut-off knowledge, and cite sources using [1], [2], etc.`
-      });
-    }
-
-    // If Code Interpreter is on, prepend system instruction for Python code output
-    if (modes.codeInterpreter) {
-      outgoingMessages.unshift({
-        role: 'system',
-        content: 'You have a client-side Python Code Interpreter powered by WebAssembly (Pyodide). When solving problems that require calculation, data analysis, or plotting, write clean, self-contained Python code inside ```python ... ``` blocks. Use matplotlib.pyplot for charts and plots.'
-      });
-    }
-
-    // 8. Apply Context Window Sliding Budget Trimming
-    const budget = parameters.contextBudgetTokens || 8192;
-    const trimmedPayload = TokenCounter.trimToContextBudget(outgoingMessages, budget);
-
-    if (searchSources.length > 0) {
-      streamingHandle.updateSources(searchSources);
-    }
-
-    let fullAnswer = '';
-    let fullThinking = '';
-    this.isStreaming = true;
-    this.activeAbortController = new AbortController();
-
     try {
-      const provider = ProviderRegistry.getProvider(activeProvider);
+      const state = store.getState();
+      const { activeProvider, selectedModel, apiKeys, parameters, modes } = state;
+      const apiKey = apiKeys[activeProvider];
 
-      await provider.streamChat({
-        apiKey,
-        messages: trimmedPayload,
-        model: selectedModel,
-        parameters,
-        modes,
-        onThinking: (delta) => {
-          fullThinking += delta;
-          streamingHandle.updateThinking(fullThinking);
-        },
-        onChunk: (delta) => {
-          fullAnswer += delta;
-          streamingHandle.updateContent(fullAnswer);
-        },
-        onSources: (sources) => {
-          searchSources = sources;
-          streamingHandle.updateSources(sources);
-        },
-        signal: this.activeAbortController.signal
-      });
+      // Ensure user has configured the active provider's API key
+      if (!apiKey) {
+        this.onboardingModal.open(activeProvider);
+        return;
+      }
 
-      streamingHandle.finalize();
+      // Resolve valid model identifier with fallback
+      const activeModel = selectedModel || (state.cachedModels[activeProvider]?.[0]?.id) || ProviderRegistry.getFallbackModels(activeProvider)[0]?.id || '';
 
-      // 9. Save assistant message to persistent store
-      const finalMsg = store.addMessage(chatId, {
-        role: 'assistant',
-        content: fullAnswer,
-        thoughtProcess: fullThinking,
-        searchSources: searchSources.length > 0 ? searchSources : undefined
-      });
-
-      // 10. If Code Interpreter Mode is active, check for Python block and auto-execute
-      if (modes.codeInterpreter) {
-        const pythonCode = PyodideBridge.extractPythonCode(fullAnswer);
-        if (pythonCode) {
-          const runResult = await PyodideBridge.execute(pythonCode);
-          store.updateLastMessage(chatId, { executionOutput: runResult });
-          this.refreshCurrentChat();
+      // 1. Ensure active chat exists
+      let chatId = state.currentChatId;
+      if (!chatId) {
+        const newChat = store.createChat(SidebarComponent.generateTitle(userPrompt));
+        chatId = newChat.id;
+        store.selectChat(chatId);
+      } else {
+        const currentChat = store.getChat(chatId);
+        if (currentChat && (!currentChat.messages || currentChat.messages.length === 0)) {
+          store.updateChat(chatId, { title: SidebarComponent.generateTitle(userPrompt) });
         }
       }
 
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.log('Stream generation aborted by user.');
-      } else {
-        console.error('Chat generation error:', err);
-        streamingHandle.updateContent(`**Error calling ${activeProvider.toUpperCase()}:** ${err.message}\n\nPlease verify your API key in Settings.`);
-        store.addMessage(chatId, {
-          role: 'assistant',
-          content: `**Error calling ${activeProvider.toUpperCase()}:** ${err.message}`
+      // 2. Extract attachments and clear tray
+      const attachments = this.fileManager.getAttachments();
+      const hasVideo = attachments.some(a => a.type === 'video');
+      if (hasVideo && activeProvider !== 'gemini') {
+        alert(`Video analysis is currently supported natively by Google Gemini (Gemini 2.0 Flash / 1.5 Pro). Please switch your provider to Gemini in the composer model selector to analyze video clips.`);
+        return;
+      }
+
+      this.fileManager.clear();
+
+      // 3. Save user message to store
+      store.addMessage(chatId, {
+        role: 'user',
+        content: userPrompt,
+        attachments
+      });
+
+      // 4. Update UI view
+      this.refreshCurrentChat();
+
+      // 5. Setup streaming assistant placeholder
+      const assistantMsgId = 'msg_' + Date.now();
+      const streamingHandle = this.messagesComponent.createStreamingMessage(assistantMsgId);
+
+      // 6. Handle Web Search Grounding for non-Gemini providers (Gemini uses native googleSearch tool)
+      let searchSources = [];
+      let searchAugmentedPrompt = userPrompt;
+
+      if (modes.webSearch && activeProvider !== 'gemini') {
+        const isBrave = Boolean(apiKeys.brave || apiKeys.braveProxyUrl);
+        streamingHandle.showSearchingStatus(isBrave ? 'Brave' : 'Web');
+        try {
+          searchSources = await SearchService.search(userPrompt, {
+            braveApiKey: apiKeys.brave,
+            braveProxyUrl: apiKeys.braveProxyUrl,
+            tavilyApiKey: apiKeys.tavily
+          });
+          if (searchSources.length > 0) {
+            const contextSnippet = SearchService.formatSearchContext(searchSources);
+            searchAugmentedPrompt = `${contextSnippet}\nUser Query: ${userPrompt}`;
+          }
+        } catch (err) {
+          console.warn('Web search grounding error:', err);
+        } finally {
+          streamingHandle.hideSearchingStatus();
+        }
+      }
+
+      // 7. Build outgoing message history
+      const currentMessages = store.getChat(chatId).messages;
+      const outgoingMessages = currentMessages.map((m, index) => {
+        if (index === currentMessages.length - 1 && searchAugmentedPrompt !== userPrompt) {
+          return { ...m, content: searchAugmentedPrompt };
+        }
+        return m;
+      });
+
+      // If Search Mode is on, inject exact current date and grounding instructions
+      if (modes.webSearch) {
+        const todayDateStr = new Date().toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        outgoingMessages.unshift({
+          role: 'system',
+          content: `Today is ${todayDateStr}. Real-time web search results are provided in <web_search_results>. Prioritize the <web_search_results> over internal cut-off knowledge, and cite sources using [1], [2], etc.`
         });
       }
-    } finally {
-      this.isStreaming = false;
-      this.activeAbortController = null;
+
+      // If Code Interpreter is on, prepend system instruction for Python code output
+      if (modes.codeInterpreter) {
+        outgoingMessages.unshift({
+          role: 'system',
+          content: 'You have a client-side Python Code Interpreter powered by WebAssembly (Pyodide). When solving problems that require calculation, data analysis, or plotting, write clean, self-contained Python code inside ```python ... ``` blocks. Use matplotlib.pyplot for charts and plots.'
+        });
+      }
+
+      // 8. Apply Context Window Sliding Budget Trimming
+      const budget = parameters.contextBudgetTokens || 8192;
+      const trimmedPayload = TokenCounter.trimToContextBudget(outgoingMessages, budget);
+
+      if (searchSources.length > 0) {
+        streamingHandle.updateSources(searchSources);
+      }
+
+      let fullAnswer = '';
+      let fullThinking = '';
+      this.isStreaming = true;
+      this.activeAbortController = new AbortController();
+
+      try {
+        const provider = ProviderRegistry.getProvider(activeProvider);
+
+        await provider.streamChat({
+          apiKey,
+          messages: trimmedPayload,
+          model: activeModel,
+          parameters,
+          modes,
+          onThinking: (delta) => {
+            fullThinking += delta;
+            streamingHandle.updateThinking(fullThinking);
+          },
+          onChunk: (delta) => {
+            fullAnswer += delta;
+            streamingHandle.updateContent(fullAnswer);
+          },
+          onSources: (sources) => {
+            searchSources = sources;
+            streamingHandle.updateSources(sources);
+          },
+          signal: this.activeAbortController.signal
+        });
+
+        streamingHandle.finalize();
+
+        // 9. Save assistant message to persistent store
+        const finalMsg = store.addMessage(chatId, {
+          role: 'assistant',
+          content: fullAnswer,
+          thoughtProcess: fullThinking,
+          searchSources: searchSources.length > 0 ? searchSources : undefined
+        });
+
+        // 10. If Code Interpreter Mode is active, check for Python block and auto-execute
+        if (modes.codeInterpreter) {
+          const pythonCode = PyodideBridge.extractPythonCode(fullAnswer);
+          if (pythonCode) {
+            const runResult = await PyodideBridge.execute(pythonCode);
+            store.updateLastMessage(chatId, { executionOutput: runResult });
+            this.refreshCurrentChat();
+          }
+        }
+
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Stream generation aborted by user.');
+        } else {
+          console.error('Chat generation error:', err);
+          const errorMsg = `**Error calling ${activeProvider.toUpperCase()}:** ${err.message || 'Request failed'}\n\nPlease verify your API key or model selection in Settings.`;
+          streamingHandle.updateContent(errorMsg);
+          streamingHandle.finalize();
+          store.addMessage(chatId, {
+            role: 'assistant',
+            content: errorMsg
+          });
+        }
+      } finally {
+        this.isStreaming = false;
+        this.activeAbortController = null;
+      }
+    } catch (outerErr) {
+      console.error('Fatal message preparation error:', outerErr);
+      alert(`Error sending message: ${outerErr.message}`);
     }
+  }
   }
 }
 

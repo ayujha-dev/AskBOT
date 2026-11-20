@@ -176,10 +176,19 @@ export class Store {
     return newChat;
   }
 
+  createChat(titleOrOptions = {}) {
+    const options = typeof titleOrOptions === 'string' ? { title: titleOrOptions } : (titleOrOptions || {});
+    return this.addChat(options);
+  }
+
   setActiveChat(id) {
     if (this.state.currentChatId !== id) {
       this.setState({ currentChatId: id });
     }
+  }
+
+  selectChat(id) {
+    this.setActiveChat(id);
   }
 
   updateChat(id, updates) {

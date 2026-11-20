@@ -60,12 +60,22 @@ test('Task 2: Store manages state and dispatches subscriptions', async () => {
   assert.equal(chat.messages.length, 1);
   assert.equal(chat.messages[0].content, 'Plot a sine wave');
 
+  // Test Chat Creation via createChat alias
+  const createdWithStr = store.createChat('String Title Chat');
+  assert.equal(createdWithStr.title, 'String Title Chat');
+  assert.equal(store.getState().currentChatId, createdWithStr.id);
+
+  // Test selectChat alias
+  store.selectChat(newChat.id);
+  assert.equal(store.getState().currentChatId, newChat.id);
+
   // Test Chat Update
   store.updateChat(newChat.id, { title: 'Updated Title' });
   assert.equal(store.getChat(newChat.id).title, 'Updated Title');
 
   // Test Chat Deletion
   store.deleteChat(newChat.id);
+  store.deleteChat(createdWithStr.id);
   assert.equal(store.getState().chats.length, 0);
   assert.equal(store.getState().currentChatId, null);
 
