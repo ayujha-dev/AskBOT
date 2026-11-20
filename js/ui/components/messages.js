@@ -155,11 +155,11 @@ export class MessagesComponent {
     if (isUser) {
       // User message column
       const userCol = document.createElement('div');
-      userCol.className = 'flex flex-col items-end max-w-xl';
+      userCol.className = 'flex flex-col items-end w-full message-user-wrap';
 
       // User bubble
       const bubble = document.createElement('div');
-      bubble.className = 'w-full px-4 py-3 rounded-2xl bg-[var(--surface-panel)] border border-[var(--surface-border)] text-sm text-[var(--text-primary)] shadow-sm leading-relaxed';
+      bubble.className = 'message-user-bubble px-4 py-3 rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] text-sm text-[var(--text-primary)] shadow-sm leading-relaxed';
 
       // Attachments preview
       if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
@@ -209,7 +209,7 @@ export class MessagesComponent {
     } else {
       // Assistant message layout
       const assistantCol = document.createElement('div');
-      assistantCol.className = 'w-full max-w-full space-y-3';
+      assistantCol.className = 'w-full max-w-full space-y-3 message-assistant-body';
 
       // 1. Thought Process Accordion (if any)
       if (msg.thoughtProcess && msg.thoughtProcess.trim()) {

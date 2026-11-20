@@ -25,10 +25,10 @@ export class ComposerComponent {
   }
 
   init() {
-    // Auto-expanding textarea
+    // Auto-expanding textarea up to 220px max-height without layout jumps
     this.textarea?.addEventListener('input', () => {
       this.textarea.style.height = 'auto';
-      this.textarea.style.height = Math.min(this.textarea.scrollHeight, 176) + 'px';
+      this.textarea.style.height = Math.min(this.textarea.scrollHeight, 220) + 'px';
       this.updateSendButtonState();
     });
 
@@ -161,10 +161,10 @@ export class ComposerComponent {
     // Code Interpreter Pill
     if (this.toggleCode) {
       if (modes.codeInterpreter) {
-        this.toggleCode.classList.add('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
+        this.toggleCode.classList.add('mode-active', 'border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
         this.toggleCode.classList.remove('text-[var(--text-muted)]');
       } else {
-        this.toggleCode.classList.remove('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
+        this.toggleCode.classList.remove('mode-active', 'border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400');
         this.toggleCode.classList.add('text-[var(--text-muted)]');
       }
     }
@@ -177,10 +177,10 @@ export class ComposerComponent {
     // Web Search Pill
     if (this.toggleSearch) {
       if (modes.webSearch) {
-        this.toggleSearch.classList.add('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
+        this.toggleSearch.classList.add('mode-active', 'border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
         this.toggleSearch.classList.remove('text-[var(--text-muted)]');
       } else {
-        this.toggleSearch.classList.remove('border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
+        this.toggleSearch.classList.remove('mode-active', 'border-sky-500/50', 'bg-sky-500/10', 'text-sky-400');
         this.toggleSearch.classList.add('text-[var(--text-muted)]');
       }
     }

@@ -14,17 +14,36 @@ import { OnboardingModal } from './ui/components/onboarding-modal.js';
 import { SettingsModal } from './ui/components/settings-modal.js';
 import { BackgroundEffects } from './ui/components/background-effects.js';
 import { ChatNavRail } from './ui/components/chat-nav-rail.js';
+import { mountAntigravity } from './antigravity.js';
 
 class AppCoordinator {
   constructor() {
     this.activeAbortController = null;
     this.isStreaming = false;
+    this.antigravity = null;
 
     this.init();
   }
 
   init() {
-    // 1. Initialize UI Subsystems
+    // 1. Initialize Antigravity WebGL2 Particle System
+    const antigravityContainer = document.getElementById('antigravity-bg');
+    if (antigravityContainer) {
+      const isLight = store.getState().theme === 'light';
+      this.antigravity = mountAntigravity(antigravityContainer, {
+        colors: ['#fdbdbd', '#87e0fe', '#ffaa84'],
+        count: 1500,
+        magnetRadius: 9,
+        ringRadius: 7,
+        particleSize: 0.9,
+        autoAnimate: true,
+        ambient: 0.18,
+        lightMode: isLight,
+        opacity: isLight ? 0.35 : 0.42
+      });
+    }
+
+    // 2. Initialize UI Subsystems
     BackgroundEffects.init();
     this.parametersDrawer = new ParametersDrawer();
     this.chatNavRail = new ChatNavRail({
@@ -68,10 +87,17 @@ class AppCoordinator {
       });
     }
 
-    // 3. Subscribe to store changes to keep conversation view in sync
+    // 3. Subscribe to store changes to keep conversation view in sync & theme synchronized
     store.subscribe((state, changedKeys) => {
       if (changedKeys.includes('currentChatId') || changedKeys.includes('chats')) {
         this.refreshCurrentChat();
+      }
+      if (changedKeys.includes('theme')) {
+        const isLight = state.theme === 'light';
+        this.antigravity?.update({
+          lightMode: isLight,
+          opacity: isLight ? 0.35 : 0.42
+        });
       }
     });
 

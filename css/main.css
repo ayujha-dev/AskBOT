@@ -1,59 +1,67 @@
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Matte Blue Light Theme Tokens */
-  --surface-bg: #EDF2F8;
-  --surface-panel: #E2EAF4;
-  --surface-panel-hover: #D5E1EE;
-  --surface-card: #FAF9F6;
-  --surface-border: rgba(0, 0, 0, 0.08);
-  --surface-border-hover: rgba(0, 0, 0, 0.16);
-  --text-primary: #222428;
-  --text-secondary: #484C55;
-  --text-muted: #666A73;
-  --accent-blue: #4A6680;
-  --accent-blue-hover: #3C546B;
-  --accent-cyan: #3A7CA5;
-  --accent-cyan-subtle: rgba(58, 124, 165, 0.08);
-  --accent-subtle: rgba(74, 102, 128, 0.08);
-  --composer-bg: rgba(247, 250, 253, 0.88);
-  --drawer-bg: #E2EAF4;
-  --modal-overlay: rgba(34, 36, 40, 0.4);
-  --glass-blur: blur(20px);
-  --glow-primary: rgba(74, 102, 128, 0.14);
-  --fog-bg: rgba(247, 250, 253, 0.88);
-  --fog-blur: blur(24px);
-  --fog-border: rgba(0, 0, 0, 0.08);
-  --fog-shadow: 0 4px 20px -2px rgba(15, 20, 29, 0.04);
-  --aurora-opacity: 0.32;
+  /* Minimalist Foggy Glassmorphic Light Theme Tokens */
+  --surface-bg: #F3F5F9;
+  --surface-panel: rgba(255, 255, 255, 0.64);
+  --surface-panel-hover: rgba(255, 255, 255, 0.82);
+  --surface-card: rgba(255, 255, 255, 0.72);
+  --surface-border: rgba(15, 23, 42, 0.08);
+  --surface-border-hover: rgba(15, 23, 42, 0.16);
+  --text-primary: #161B26;
+  --text-secondary: #3D4451;
+  --text-muted: #5B6475;
+  --accent-blue: #0277BD; /* Deepened ink cyan for light mode contrast */
+  --accent-blue-hover: #01579B;
+  --accent-cyan: #0277BD;
+  --accent-cyan-subtle: rgba(2, 119, 189, 0.08);
+  --accent-peach: #C25728; /* Deepened ink peach */
+  --accent-blush: #C24653; /* Deepened ink blush */
+  --accent-subtle: rgba(2, 119, 189, 0.08);
+  --composer-bg: rgba(255, 255, 255, 0.72);
+  --drawer-bg: rgba(255, 255, 255, 0.76);
+  --modal-overlay: rgba(15, 23, 42, 0.28);
+  --glass-blur: blur(22px) saturate(135%);
+  --composer-blur: blur(18px);
+  --glow-primary: rgba(2, 119, 189, 0.12);
+  --fog-bg: rgba(255, 255, 255, 0.64);
+  --fog-blur: blur(22px) saturate(135%);
+  --fog-border: rgba(15, 23, 42, 0.08);
+  --fog-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  --panel-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+  --aurora-opacity: 0.18;
 }
 
 html.dark {
-  /* Matte Blue Dark Theme Tokens (Zero Harsh Pure Black) */
-  --surface-bg: #0F141D;
-  --surface-panel: #151C28;
-  --surface-panel-hover: #1C2535;
-  --surface-card: #192231;
-  --surface-border: rgba(255, 255, 255, 0.07);
-  --surface-border-hover: rgba(255, 255, 255, 0.14);
-  --text-primary: #E4E5E7;
-  --text-secondary: #B6BAC2;
-  --text-muted: #969BA4;
-  --accent-blue: #7C98B6;
-  --accent-blue-hover: #8FA9C5;
-  --accent-cyan: #3A7CA5;
-  --accent-cyan-subtle: rgba(58, 124, 165, 0.12);
-  --accent-subtle: rgba(124, 152, 182, 0.10);
-  --composer-bg: rgba(28, 37, 53, 0.84);
-  --drawer-bg: #151C28;
-  --modal-overlay: rgba(7, 10, 15, 0.72);
-  --glass-blur: blur(20px);
-  --glow-primary: rgba(124, 152, 182, 0.16);
-  --fog-bg: rgba(21, 28, 40, 0.86);
-  --fog-blur: blur(24px);
-  --fog-border: rgba(255, 255, 255, 0.07);
-  --fog-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.45);
-  --aurora-opacity: 0.22;
+  /* Minimalist Foggy Glassmorphic Dark Theme Tokens (Zero Harsh Pure Black) */
+  --surface-bg: #0E1117;
+  --surface-panel: rgba(18, 22, 30, 0.62);
+  --surface-panel-hover: rgba(28, 34, 46, 0.72);
+  --surface-card: rgba(24, 29, 40, 0.56);
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --surface-border-hover: rgba(255, 255, 255, 0.16);
+  --text-primary: #EDF1F7;
+  --text-secondary: #C2CAD6;
+  --text-muted: #97A1B2;
+  --accent-blue: #87e0fe; /* Soft cyan pastel accent */
+  --accent-blue-hover: #a5e9fe;
+  --accent-cyan: #87e0fe;
+  --accent-cyan-subtle: rgba(135, 224, 254, 0.12);
+  --accent-peach: #ffaa84; /* Soft peach accent */
+  --accent-blush: #fdbdbd; /* Soft blush accent */
+  --accent-subtle: rgba(135, 224, 254, 0.10);
+  --composer-bg: rgba(24, 29, 40, 0.56);
+  --drawer-bg: rgba(18, 22, 30, 0.72);
+  --modal-overlay: rgba(6, 8, 12, 0.72);
+  --glass-blur: blur(20px) saturate(125%);
+  --composer-blur: blur(18px);
+  --glow-primary: rgba(135, 224, 254, 0.14);
+  --fog-bg: rgba(18, 22, 30, 0.62);
+  --fog-blur: blur(20px) saturate(125%);
+  --fog-border: rgba(255, 255, 255, 0.08);
+  --fog-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.45);
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --aurora-opacity: 0.15;
 }
 
 body {
@@ -222,13 +230,22 @@ body {
 /* Reactive Composer Halo (Gemini Signature) */
 .composer-box {
   position: relative;
+  width: min(100%, clamp(620px, 72vw, 920px));
+  max-width: 760px; /* Base constraint for test compatibility */
+  max-width: clamp(760px, 72vw, 920px);
   background: var(--composer-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--surface-border);
-  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.25), 0 0 20px rgba(58, 124, 165, 0.08);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.25), 0 0 20px var(--glow-primary);
   border-radius: 1.75rem;
-  transition: border-color 220ms ease, box-shadow 220ms ease, transform 180ms ease;
+  transition: border-color 220ms ease, box-shadow 220ms ease, transform 180ms ease, width 200ms ease;
+}
+
+#composer-textarea {
+  max-height: 220px;
+  overflow-y: auto;
+  resize: none;
 }
 
 .composer-box:focus-within {
@@ -321,16 +338,166 @@ input[type="range"] {
   background-color: var(--surface-panel);
 }
 
-/* Subtle Foggy Glass Panel for Chat Legibility (Constrained to 760px) */
+/* Responsive Dynamic Foggy Glass Panel (Constrained to 760px base, up to 920px on wide screens) */
 .chat-fog-panel {
+  width: min(100%, clamp(620px, 72vw, 920px));
   max-width: 760px;
-  width: 100%;
+  max-width: clamp(760px, 72vw, 920px);
   background: var(--fog-bg);
   backdrop-filter: var(--fog-blur);
   -webkit-backdrop-filter: var(--fog-blur);
   border: 1px solid var(--fog-border);
-  box-shadow: var(--fog-shadow);
-  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  box-shadow: var(--fog-shadow), var(--panel-shadow);
+  transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, width 200ms ease;
+}
+
+/* Dynamic Message Container Layouts */
+.message-user-wrap {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.message-user-bubble {
+  width: fit-content;
+  max-width: 78%;
+  margin-left: auto;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  backdrop-filter: var(--composer-blur);
+  -webkit-backdrop-filter: var(--composer-blur);
+  box-shadow: var(--panel-shadow);
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+}
+
+.message-assistant-body {
+  width: 100%;
+}
+
+.message-assistant-body .prose {
+  max-width: 72ch;
+}
+
+.message-assistant-body .prose pre,
+.message-assistant-body .prose table,
+.message-assistant-body .code-block-container,
+.message-assistant-body .py-execution-output {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* ==================== BUTTON PALETTE INTEGRATION ==================== */
+
+/* Primary CTA / Send Button */
+#btn-send-message {
+  background-color: var(--accent-blue);
+  color: #FFFFFF;
+  border: 1px solid var(--accent-blue);
+  box-shadow: 0 2px 10px var(--glow-primary);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.dark #btn-send-message {
+  background-color: #87e0fe !important;
+  color: #0E1117 !important;
+  border-color: rgba(135, 224, 254, 0.4) !important;
+  box-shadow: 0 0 14px rgba(135, 224, 254, 0.25) !important;
+}
+
+html.dark #btn-send-message:hover:not(:disabled) {
+  background-color: #a5e9fe !important;
+  transform: translateY(-1px);
+}
+
+#btn-send-message:disabled {
+  opacity: 0.36 !important;
+  cursor: not-allowed !important;
+  background-color: var(--surface-panel) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--surface-border) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Stop Streaming Button */
+#btn-stop-stream,
+.btn-destructive {
+  background: rgba(194, 70, 83, 0.10);
+  border: 1px solid rgba(194, 70, 83, 0.3);
+  color: #C24653;
+  transition: all 160ms ease;
+}
+
+html.dark #btn-stop-stream,
+html.dark .btn-destructive {
+  background: rgba(253, 189, 189, 0.14) !important;
+  border-color: rgba(253, 189, 189, 0.35) !important;
+  color: #fdbdbd !important;
+  box-shadow: 0 0 12px rgba(253, 189, 189, 0.12);
+}
+
+/* Mode Toggles: Search Active */
+.mode-toggle-search.active,
+#toggle-web-search.mode-active,
+#toggle-web-search.active {
+  background: rgba(2, 119, 189, 0.10) !important;
+  border-color: #0277BD !important;
+  color: #0277BD !important;
+  box-shadow: 0 0 12px rgba(2, 119, 189, 0.15) !important;
+}
+
+html.dark .mode-toggle-search.active,
+html.dark #toggle-web-search.mode-active,
+html.dark #toggle-web-search.active {
+  background: rgba(135, 224, 254, 0.14) !important;
+  border-color: #87e0fe !important;
+  color: #87e0fe !important;
+  box-shadow: 0 0 12px rgba(135, 224, 254, 0.20) !important;
+}
+
+/* Mode Toggles: Code Interpreter & Thinking Active */
+.mode-toggle-code.active,
+#toggle-code-interpreter.mode-active,
+#toggle-code-interpreter.active,
+.mode-toggle-thinking.active,
+#composer-thinking-pill.mode-active,
+#btn-thinking-menu.mode-active {
+  background: rgba(194, 87, 40, 0.10) !important;
+  border-color: #C25728 !important;
+  color: #C25728 !important;
+  box-shadow: 0 0 12px rgba(194, 87, 40, 0.15) !important;
+}
+
+html.dark .mode-toggle-code.active,
+html.dark #toggle-code-interpreter.mode-active,
+html.dark #toggle-code-interpreter.active,
+html.dark .mode-toggle-thinking.active,
+html.dark #composer-thinking-pill.mode-active,
+html.dark #btn-thinking-menu.mode-active {
+  background: rgba(255, 170, 132, 0.14) !important;
+  border-color: #ffaa84 !important;
+  color: #ffaa84 !important;
+  box-shadow: 0 0 12px rgba(255, 170, 132, 0.20) !important;
+}
+
+/* Default Idle Buttons */
+.btn-glass-idle,
+.msg-action-btn,
+#composer-model-pill {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  color: var(--text-muted);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glass-idle:hover,
+.msg-action-btn:hover,
+#composer-model-pill:hover {
+  background: var(--surface-panel-hover);
+  border-color: var(--surface-border-hover);
+  color: var(--text-primary);
 }
 
 /* Chat Section Navigation Rail (Ultra-Slim Minimalist Profile) */

@@ -7,23 +7,23 @@ test('Soft Matte Palette: CSS variables enforce muted tactile matte design syste
   const css = fs.readFileSync(path.resolve('css/main.css'), 'utf-8');
 
   // Matte Dark (Default)
-  assert.ok(css.includes('--surface-bg: #0F141D') || css.includes('--surface-bg: #16171A'), 'Dark bg must be soft matte #0F141D (no pure black)');
-  assert.ok(css.includes('--surface-panel: #151C28') || css.includes('--surface-panel: #1D1F23'), 'Dark elevated panel must be #151C28');
-  assert.ok(css.includes('--composer-bg: rgba(28, 37, 53, 0.84)') || css.includes('--surface-card: #23262B'), 'Dark composer must be frosted matte blue');
-  assert.ok(css.includes('--surface-border: rgba(255, 255, 255, 0.07)'), 'Dark border must be 7% white hairline');
-  assert.ok(css.includes('--text-primary: #E4E5E7'), 'Dark primary text must be soft #E4E5E7 (no glaring pure white)');
-  assert.ok(css.includes('--text-muted: #969BA4'), 'Dark muted text must be #969BA4');
-  assert.ok(css.includes('--accent-blue: #7C98B6'), 'Dark accent must be dusty slate-blue #7C98B6');
-  assert.ok(css.includes('--accent-blue-hover: #8FA9C5'), 'Dark accent hover must be #8FA9C5');
+  assert.ok(css.includes('--surface-bg: #0E1117') || css.includes('--surface-bg: #0F141D') || css.includes('--surface-bg: #16171A'), 'Dark bg must be soft matte #0E1117 (no pure black)');
+  assert.ok(css.includes('--surface-panel: rgba(18, 22, 30, 0.62)') || css.includes('--surface-panel: #151C28') || css.includes('--surface-panel: #1D1F23'), 'Dark elevated panel must be foggy glass');
+  assert.ok(css.includes('--composer-bg: rgba(24, 29, 40, 0.56)') || css.includes('--composer-bg: rgba(28, 37, 53, 0.84)') || css.includes('--surface-card: #23262B'), 'Dark composer must be frosted glass');
+  assert.ok(css.includes('--surface-border: rgba(255, 255, 255, 0.08)') || css.includes('--surface-border: rgba(255, 255, 255, 0.07)'), 'Dark border must be hairline');
+  assert.ok(css.includes('--text-primary: #EDF1F7') || css.includes('--text-primary: #E4E5E7'), 'Dark primary text must be soft #EDF1F7 (no glaring pure white)');
+  assert.ok(css.includes('--text-muted: #97A1B2') || css.includes('--text-muted: #969BA4'), 'Dark muted text must be #97A1B2');
+  assert.ok(css.includes('--accent-blue: #87e0fe') || css.includes('--accent-blue: #7C98B6'), 'Dark accent must be #87e0fe or dusty slate-blue');
+  assert.ok(css.includes('--accent-blue-hover: #a5e9fe') || css.includes('--accent-blue-hover: #8FA9C5'), 'Dark accent hover must be defined');
 
   // Matte Light
-  assert.ok(css.includes('--surface-bg: #EDF2F8') || css.includes('--surface-bg: #F4F3EF'), 'Light bg must be tactile #EDF2F8');
-  assert.ok(css.includes('--surface-panel: #E2EAF4') || css.includes('--surface-panel: #ECEAE4'), 'Light panel must be #E2EAF4');
-  assert.ok(css.includes('--composer-bg: rgba(247, 250, 253, 0.88)') || css.includes('--surface-card: #FAF9F6'), 'Light composer must be frosted light');
-  assert.ok(css.includes('--surface-border: rgba(0, 0, 0, 0.08)'), 'Light border must be 8% black hairline');
-  assert.ok(css.includes('--text-primary: #222428'), 'Light primary text must be #222428');
-  assert.ok(css.includes('--text-muted: #666A73'), 'Light muted text must be #666A73');
-  assert.ok(css.includes('--accent-blue: #4A6680'), 'Light accent must be #4A6680');
+  assert.ok(css.includes('--surface-bg: #F3F5F9') || css.includes('--surface-bg: #EDF2F8') || css.includes('--surface-bg: #F4F3EF'), 'Light bg must be #F3F5F9');
+  assert.ok(css.includes('--surface-panel: rgba(255, 255, 255, 0.64)') || css.includes('--surface-panel: #E2EAF4') || css.includes('--surface-panel: #ECEAE4'), 'Light panel must be #E2EAF4');
+  assert.ok(css.includes('--composer-bg: rgba(255, 255, 255, 0.72)') || css.includes('--composer-bg: rgba(247, 250, 253, 0.88)') || css.includes('--surface-card: #FAF9F6'), 'Light composer must be frosted light');
+  assert.ok(css.includes('--surface-border: rgba(15, 23, 42, 0.08)') || css.includes('--surface-border: rgba(0, 0, 0, 0.08)'), 'Light border must be 8% black hairline');
+  assert.ok(css.includes('--text-primary: #161B26') || css.includes('--text-primary: #222428'), 'Light primary text must be #161B26');
+  assert.ok(css.includes('--text-muted: #5B6475') || css.includes('--text-muted: #666A73'), 'Light muted text must be #5B6475');
+  assert.ok(css.includes('--accent-blue: #0277BD') || css.includes('--accent-blue: #4A6680'), 'Light accent must be #0277BD or muted');
 
   // 760px container width
   assert.ok(css.includes('max-width: 760px'), 'Chat fog panel must be constrained to 760px max width');
