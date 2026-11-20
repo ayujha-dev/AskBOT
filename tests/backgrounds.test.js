@@ -18,14 +18,15 @@ if (typeof globalThis.localStorage === 'undefined') {
 }
 
 test('BackgroundManager: Defines background types and default selection', () => {
-  assert.equal(BACKGROUND_TYPES.GALAXY, 'galaxy');
   assert.equal(BACKGROUND_TYPES.ANTIGRAVITY, 'antigravity');
+  assert.equal(BACKGROUND_TYPES.GALAXY, 'galaxy');
+  assert.equal(BACKGROUND_TYPES.AURORA, 'aurora');
   assert.equal(BACKGROUND_TYPES.NONE, 'none');
 
   globalThis.localStorage.removeItem(STORAGE_KEY_BACKGROUND);
   const bm = new BackgroundManager(null, 'dark');
-  assert.equal(bm.getSavedMode(), 'galaxy', 'Default background must be galaxy');
-  assert.equal(bm.currentMode, 'galaxy');
+  assert.equal(bm.getSavedMode(), 'antigravity', 'Default background must be antigravity');
+  assert.equal(bm.currentMode, 'antigravity');
 });
 
 test('BackgroundManager: Switching modes persists to localStorage and manages lifecycle', () => {
@@ -38,20 +39,32 @@ test('BackgroundManager: Switching modes persists to localStorage and manages li
     destroy: () => { destroyCalled = true; }
   };
 
-  bm.switchBackground('antigravity');
+  bm.switchBackground('galaxy');
   assert.equal(destroyCalled, true, 'Active instance must be destroyed on mode switch');
-  assert.equal(bm.currentMode, 'antigravity');
-  assert.equal(globalThis.localStorage.getItem(STORAGE_KEY_BACKGROUND), 'antigravity');
+  assert.equal(bm.currentMode, 'galaxy');
+  assert.equal(globalThis.localStorage.getItem(STORAGE_KEY_BACKGROUND), 'galaxy');
 
-  // Switch to none
-  let antigravityDestroyed = false;
+  // Switch to aurora
+  let galaxyDestroyed = false;
   bm.activeInstance = {
     update: () => {},
-    destroy: () => { antigravityDestroyed = true; }
+    destroy: () => { galaxyDestroyed = true; }
+  };
+
+  bm.switchBackground('aurora');
+  assert.equal(galaxyDestroyed, true, 'Galaxy instance must be destroyed when switching to aurora');
+  assert.equal(bm.currentMode, 'aurora');
+  assert.equal(globalThis.localStorage.getItem(STORAGE_KEY_BACKGROUND), 'aurora');
+
+  // Switch to none
+  let auroraDestroyed = false;
+  bm.activeInstance = {
+    update: () => {},
+    destroy: () => { auroraDestroyed = true; }
   };
 
   bm.switchBackground('none');
-  assert.equal(antigravityDestroyed, true);
+  assert.equal(auroraDestroyed, true);
   assert.equal(bm.currentMode, 'none');
   assert.equal(bm.activeInstance, null);
   assert.equal(globalThis.localStorage.getItem(STORAGE_KEY_BACKGROUND), 'none');
@@ -65,20 +78,6 @@ test('BackgroundManager: Handles theme change updates safely', () => {
     destroy: () => {}
   };
 
-  // When mode is galaxy and theme switches to light
-  bm.currentMode = 'galaxy';
-  bm.handleThemeChange('light');
-  assert.ok(lastUpdate);
-  assert.equal(lastUpdate.lightMode, true);
-  assert.equal(lastUpdate.opacity, 0.55);
-  assert.deepEqual(lastUpdate.starColors, ['#334155', '#64748b', '#3b82f6']);
-
-  // When theme switches back to dark
-  bm.handleThemeChange('dark');
-  assert.equal(lastUpdate.lightMode, false);
-  assert.equal(lastUpdate.opacity, 0.9);
-  assert.deepEqual(lastUpdate.starColors, ['#ffffff', '#ffd9a3', '#a8c8ff']);
-
   // When mode is antigravity
   bm.currentMode = 'antigravity';
   bm.handleThemeChange('light');
@@ -88,4 +87,27 @@ test('BackgroundManager: Handles theme change updates safely', () => {
   bm.handleThemeChange('dark');
   assert.equal(lastUpdate.lightMode, false);
   assert.equal(lastUpdate.opacity, 0.42);
+
+  // When mode is galaxy
+  bm.currentMode = 'galaxy';
+  bm.handleThemeChange('light');
+  assert.equal(lastUpdate.lightMode, true);
+  assert.equal(lastUpdate.opacity, 0.55);
+  assert.deepEqual(lastUpdate.starColors, ['#334155', '#64748b', '#3b82f6']);
+
+  bm.handleThemeChange('dark');
+  assert.equal(lastUpdate.lightMode, false);
+  assert.equal(lastUpdate.opacity, 0.9);
+  assert.deepEqual(lastUpdate.starColors, ['#ffffff', '#ffd9a3', '#a8c8ff']);
+
+  // When mode is aurora
+  bm.currentMode = 'aurora';
+  bm.handleThemeChange('light');
+  assert.equal(lastUpdate.lightMode, true);
+  assert.equal(lastUpdate.opacity, 0.42);
+
+  bm.handleThemeChange('dark');
+  assert.equal(lastUpdate.lightMode, false);
+  assert.equal(lastUpdate.opacity, 0.85);
+  assert.deepEqual(lastUpdate.colors, ['#2B5B9E', '#4B6CB7', '#3A7CA5', '#5C548E']);
 });

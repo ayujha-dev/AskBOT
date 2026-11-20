@@ -30,7 +30,10 @@ class AppCoordinator {
   }
 
   init() {
-    // 1. Initialize WebGL2 Background Manager (Galaxy as Default)
+    // 0. Initialize Typography Scale from LocalStorage
+    SettingsModal.applyFontSize(SettingsModal.getSavedFontSize());
+
+    // 1. Initialize WebGL2 Background Manager (Antigravity as Default)
     const bgContainer = document.getElementById('antigravity-bg');
     this.backgroundManager = new BackgroundManager(bgContainer, store.getState().theme);
     this.backgroundManager.init();

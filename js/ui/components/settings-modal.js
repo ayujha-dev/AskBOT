@@ -131,6 +131,9 @@ export class SettingsModal {
     // Export chats button
     this.wireExportChats();
 
+    // Typography and text size controls
+    this.initTypographyControls();
+
     this.renderProviders();
     this.updateBackgroundSelectorUI(this.getActiveBackground());
 
@@ -143,14 +146,94 @@ export class SettingsModal {
     });
   }
 
+  static getSavedFontSize() {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('askbot_chat_font_size');
+      if (saved) {
+        const num = Number(saved);
+        if (!isNaN(num) && num >= 13 && num <= 20) return num;
+      }
+    }
+    return 15;
+  }
+
+  static applyFontSize(size) {
+    const num = Math.min(20, Math.max(13, Number(size) || 15));
+    const codeSize = Math.round(num * 0.9 * 10) / 10;
+    const lineHeight = 1.65;
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.style.setProperty('--chat-font-size', `${num}px`);
+      document.documentElement.style.setProperty('--chat-line-height', `${lineHeight}`);
+      document.documentElement.style.setProperty('--chat-code-size', `${codeSize}px`);
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('askbot_chat_font_size', String(num));
+    }
+    return num;
+  }
+
   getActiveBackground() {
     if (this.backgroundManager) {
       return this.backgroundManager.currentMode;
     }
     if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem('askbot_background') || 'galaxy';
+      return localStorage.getItem('askbot_background') || 'antigravity';
     }
-    return 'galaxy';
+    return 'antigravity';
+  }
+
+  initTypographyControls() {
+    if (!this.modalEl) return;
+    const slider = this.modalEl.querySelector('#chat-font-size-slider');
+    const badge = this.modalEl.querySelector('#font-size-value-badge');
+    const presetBtns = this.modalEl.querySelectorAll('.font-size-preset-btn');
+    const preview = this.modalEl.querySelector('#typography-live-preview');
+
+    const updateControlsUI = (size) => {
+      if (slider) slider.value = String(size);
+      if (badge) badge.textContent = `${size}px`;
+      if (preview) {
+        preview.style.fontSize = `${size}px`;
+        const code = preview.querySelector('code');
+        if (code) {
+          code.style.fontSize = `${Math.round(size * 0.9 * 10) / 10}px`;
+        }
+      }
+      presetBtns.forEach(btn => {
+        const btnSize = Number(btn.getAttribute('data-size'));
+        if (btnSize === size) {
+          btn.classList.add('active');
+          btn.classList.add('bg-[var(--accent-blue)]');
+          btn.classList.add('text-white');
+          btn.classList.add('shadow-sm');
+        } else {
+          btn.classList.remove('active');
+          btn.classList.remove('bg-[var(--accent-blue)]');
+          btn.classList.remove('text-white');
+          btn.classList.remove('shadow-sm');
+        }
+      });
+    };
+
+    const current = SettingsModal.getSavedFontSize();
+    SettingsModal.applyFontSize(current);
+    updateControlsUI(current);
+
+    if (slider) {
+      slider.addEventListener('input', (e) => {
+        const size = Number(e.target.value);
+        SettingsModal.applyFontSize(size);
+        updateControlsUI(size);
+      });
+    }
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = Number(btn.getAttribute('data-size'));
+        SettingsModal.applyFontSize(size);
+        updateControlsUI(size);
+      });
+    });
   }
 
   updateBackgroundSelectorUI(activeMode) {
