@@ -3,10 +3,19 @@ import { PyodideBridge } from '../../services/pyodide-bridge.js';
 import { escapeHtml, sanitizeUrl } from '../../utils/dom.js';
 
 export class MessagesComponent {
-  constructor(containerEl, emptyStateEl) {
+  constructor(containerEl, emptyStateEl, options = {}) {
+    // Support either constructor(containerEl, emptyStateEl, options) or constructor(options)
+    if (containerEl && typeof containerEl === 'object' && !containerEl.nodeType && !emptyStateEl) {
+      options = containerEl;
+      containerEl = null;
+    }
+
     this.container = containerEl || document.getElementById('messages-container');
     this.emptyState = emptyStateEl || document.getElementById('empty-state');
     this.canvas = document.getElementById('chat-canvas');
+
+    this.onRegenerate = options.onRegenerate || (() => {});
+    this.onEditPrompt = options.onEditPrompt || (() => {});
 
     this.initGlobalListeners();
   }
@@ -16,7 +25,7 @@ export class MessagesComponent {
 
     // Handle delegated copy and run-code clicks
     this.container.addEventListener('click', async (e) => {
-      // Copy code button
+      // Copy code button inside syntax highlighted block
       const copyBtn = e.target.closest('.copy-code-btn');
       if (copyBtn) {
         const text = decodeURIComponent(copyBtn.getAttribute('data-copy') || '');
@@ -25,6 +34,39 @@ export class MessagesComponent {
           const originalHTML = copyBtn.innerHTML;
           copyBtn.innerHTML = '<svg class="w-3 h-3 text-emerald-500"><use href="#icon-check"/></svg><span>Copied!</span>';
           setTimeout(() => { copyBtn.innerHTML = originalHTML; }, 2000);
+        }
+        return;
+      }
+
+      // Copy whole message action
+      const msgCopyBtn = e.target.closest('.btn-copy-msg');
+      if (msgCopyBtn) {
+        const text = decodeURIComponent(msgCopyBtn.getAttribute('data-copy-text') || '');
+        if (text) {
+          await navigator.clipboard.writeText(text);
+          const originalHTML = msgCopyBtn.innerHTML;
+          msgCopyBtn.innerHTML = '<svg class="w-3 h-3 text-emerald-400"><use href="#icon-check"/></svg><span>Copied</span>';
+          setTimeout(() => { msgCopyBtn.innerHTML = originalHTML; }, 1800);
+        }
+        return;
+      }
+
+      // Edit & Resend user prompt action
+      const editBtn = e.target.closest('.btn-edit-prompt');
+      if (editBtn) {
+        const text = decodeURIComponent(editBtn.getAttribute('data-prompt-text') || '');
+        if (text) {
+          this.onEditPrompt(text);
+        }
+        return;
+      }
+
+      // Regenerate assistant turn action
+      const regenBtn = e.target.closest('.btn-regen-msg');
+      if (regenBtn) {
+        const msgId = regenBtn.getAttribute('data-msg-id');
+        if (msgId) {
+          this.onRegenerate(msgId);
         }
         return;
       }
@@ -110,12 +152,16 @@ export class MessagesComponent {
     const isUser = msg.role === 'user';
     const wrapper = document.createElement('div');
     wrapper.id = `msg-${msg.id}`;
-    wrapper.className = `message-entry flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`;
+    wrapper.className = `message-entry group flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`;
 
     if (isUser) {
-      // User message bubble
+      // User message column
+      const userCol = document.createElement('div');
+      userCol.className = 'flex flex-col items-end max-w-xl';
+
+      // User bubble
       const bubble = document.createElement('div');
-      bubble.className = 'max-w-xl px-4 py-3 rounded-2xl bg-[var(--surface-panel)] border border-[var(--surface-border)] text-sm text-[var(--text-primary)] shadow-sm leading-relaxed';
+      bubble.className = 'w-full px-4 py-3 rounded-2xl bg-[var(--surface-panel)] border border-[var(--surface-border)] text-sm text-[var(--text-primary)] shadow-sm leading-relaxed';
 
       // Attachments preview
       if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
@@ -144,46 +190,73 @@ export class MessagesComponent {
       textNode.className = 'whitespace-pre-wrap';
       textNode.textContent = msg.content;
       bubble.appendChild(textNode);
+      userCol.appendChild(bubble);
 
-      wrapper.appendChild(bubble);
+      // User hover message actions
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'message-actions flex items-center gap-1.5 mt-1 mr-1 text-[11px]';
+      actionsEl.innerHTML = `
+        <button class="msg-action-btn btn-copy-msg" data-copy-text="${encodeURIComponent(msg.content)}" title="Copy message text">
+          <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+          <span>Copy</span>
+        </button>
+        <button class="msg-action-btn btn-edit-prompt" data-prompt-text="${encodeURIComponent(msg.content)}" title="Edit and resend message">
+          <svg class="w-3 h-3"><use href="#icon-edit"/></svg>
+          <span>Edit</span>
+        </button>
+      `;
+      userCol.appendChild(actionsEl);
+
+      wrapper.appendChild(userCol);
     } else {
       // Assistant message layout
       const assistantCol = document.createElement('div');
       assistantCol.className = 'w-full max-w-full space-y-3';
 
-      // 1. Search Sources Pill Tray (if any)
-      if (Array.isArray(msg.searchSources) && msg.searchSources.length > 0) {
-        const sourcesTray = document.createElement('div');
-        sourcesTray.className = 'flex items-center gap-2 flex-wrap text-xs text-[var(--text-muted)] py-1';
-        sourcesTray.innerHTML = `<span class="font-semibold text-[11px] flex items-center gap-1 text-[var(--accent-blue)]">
-          <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
-          Sources:
-        </span>`;
-
-        msg.searchSources.forEach((s, idx) => {
-          const pill = document.createElement('a');
-          pill.href = sanitizeUrl(s.url);
-          pill.target = '_blank';
-          pill.rel = 'noopener noreferrer';
-          pill.className = 'px-2.5 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition inline-flex items-center gap-1 truncate max-w-xs';
-          pill.innerHTML = `<span class="text-[var(--text-muted)]">[${idx + 1}]</span> <span class="truncate">${escapeHtml(s.title)}</span>`;
-          sourcesTray.appendChild(pill);
-        });
-
-        assistantCol.appendChild(sourcesTray);
-      }
-
-      // 2. Thought Process Accordion (if any)
+      // 1. Thought Process Accordion (if any)
       if (msg.thoughtProcess && msg.thoughtProcess.trim()) {
         const accordion = this.createThoughtAccordion(msg.thoughtProcess);
         assistantCol.appendChild(accordion);
       }
 
-      // 3. Message Body (Markdown)
+      // 2. Message Body (Markdown)
       const bodyEl = document.createElement('div');
       bodyEl.className = 'prose text-sm text-[var(--text-primary)] leading-relaxed';
       bodyEl.innerHTML = MarkdownRenderer.render(msg.content);
       assistantCol.appendChild(bodyEl);
+
+      // 3. Search Sources Pill Tray (Rendered cleanly below assistant response)
+      if (Array.isArray(msg.searchSources) && msg.searchSources.length > 0) {
+        const sourcesTray = document.createElement('div');
+        sourcesTray.className = 'sources-tray pt-2 border-t border-[var(--surface-border)] flex items-center gap-2 flex-wrap text-xs';
+        sourcesTray.innerHTML = `<span class="font-semibold text-[10px] uppercase tracking-wider flex items-center gap-1 text-[var(--text-muted)]">
+          <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
+          Sources:
+        </span>`;
+
+        msg.searchSources.forEach((s, idx) => {
+          let domain = s.domain;
+          if (!domain && s.url) {
+            try { domain = new URL(s.url).hostname.replace(/^www\./, ''); } catch { domain = ''; }
+          }
+
+          const pill = document.createElement('a');
+          pill.href = sanitizeUrl(s.url);
+          pill.target = '_blank';
+          pill.rel = 'noopener noreferrer';
+          pill.className = 'matte-source-chip';
+          pill.title = s.title || s.url;
+          pill.innerHTML = `
+            <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] flex-shrink-0"></span>
+            ${domain ? `<span class="font-semibold text-[10px] text-[var(--text-muted)]">${escapeHtml(domain)}</span>` : ''}
+            <span class="truncate">${escapeHtml(s.title || 'Source')}</span>
+            ${s.age ? `<span class="text-[10px] text-[var(--text-muted)] flex-shrink-0">(${escapeHtml(s.age)})</span>` : ''}
+          `;
+          sourcesTray.appendChild(pill);
+        });
+
+        assistantCol.appendChild(sourcesTray);
+      }
 
       // 4. Standalone Execution Output Card (if any saved with message)
       if (msg.executionOutput) {
@@ -208,6 +281,21 @@ export class MessagesComponent {
         outputWrapper.innerHTML = inner;
         assistantCol.appendChild(outputWrapper);
       }
+
+      // 5. Assistant hover actions
+      const actionsEl = document.createElement('div');
+      actionsEl.className = 'message-actions flex items-center gap-1.5 pt-1 text-[11px]';
+      actionsEl.innerHTML = `
+        <button class="msg-action-btn btn-copy-msg" data-copy-text="${encodeURIComponent(msg.content)}" title="Copy response markdown">
+          <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+          <span>Copy</span>
+        </button>
+        <button class="msg-action-btn btn-regen-msg" data-msg-id="${msg.id}" title="Regenerate this response">
+          <svg class="w-3 h-3"><use href="#icon-refresh"/></svg>
+          <span>Regenerate</span>
+        </button>
+      `;
+      assistantCol.appendChild(actionsEl);
 
       wrapper.appendChild(assistantCol);
     }
@@ -247,7 +335,6 @@ export class MessagesComponent {
       }
     });
 
-    // Default expanded during live thinking, collapsed when done
     if (isLive) {
       content.classList.add('expanded');
       header.querySelector('.chevron-icon')?.classList.add('rotate-180');
@@ -275,10 +362,11 @@ export class MessagesComponent {
     thinkingPlaceholder.id = `streaming-thinking-${id}`;
     assistantCol.appendChild(thinkingPlaceholder);
 
-    // Sources placeholder
-    const sourcesPlaceholder = document.createElement('div');
-    sourcesPlaceholder.id = `streaming-sources-${id}`;
-    assistantCol.appendChild(sourcesPlaceholder);
+    // Searching status indicator
+    const searchingStatus = document.createElement('div');
+    searchingStatus.id = `streaming-status-${id}`;
+    searchingStatus.className = 'hidden';
+    assistantCol.appendChild(searchingStatus);
 
     // Body
     const bodyEl = document.createElement('div');
@@ -287,11 +375,30 @@ export class MessagesComponent {
     bodyEl.innerHTML = '<span class="inline-block w-2 h-4 bg-[var(--accent-blue)] animate-pulse rounded-sm"></span>';
     assistantCol.appendChild(bodyEl);
 
+    // Sources placeholder below body
+    const sourcesPlaceholder = document.createElement('div');
+    sourcesPlaceholder.id = `streaming-sources-${id}`;
+    assistantCol.appendChild(sourcesPlaceholder);
+
     wrapper.appendChild(assistantCol);
     this.container.appendChild(wrapper);
     this.scrollToBottom();
 
     return {
+      showSearchingStatus: (engineName = 'Brave') => {
+        searchingStatus.className = 'flex items-center gap-2 py-1';
+        searchingStatus.innerHTML = `
+          <div class="searching-pill">
+            <svg class="w-3.5 h-3.5 animate-spin"><use href="#icon-search"/></svg>
+            <span>Searching ${escapeHtml(engineName)}...</span>
+          </div>
+        `;
+        this.scrollToBottom();
+      },
+      hideSearchingStatus: () => {
+        searchingStatus.innerHTML = '';
+        searchingStatus.className = 'hidden';
+      },
       updateThinking: (fullThought) => {
         let acc = thinkingPlaceholder.querySelector('.thought-accordion');
         if (!acc) {
@@ -310,25 +417,36 @@ export class MessagesComponent {
       },
       updateSources: (sources) => {
         if (!Array.isArray(sources) || sources.length === 0) return;
-        sourcesPlaceholder.innerHTML = `<div class="flex items-center gap-2 flex-wrap text-xs text-[var(--text-muted)] py-1">
-          <span class="font-semibold text-[11px] flex items-center gap-1 text-[var(--accent-blue)]">
-            <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
+        sourcesPlaceholder.innerHTML = `<div class="sources-tray pt-2 border-t border-[var(--surface-border)] flex items-center gap-2 flex-wrap text-xs">
+          <span class="font-semibold text-[10px] uppercase tracking-wider flex items-center gap-1 text-[var(--text-muted)]">
+            <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
             Sources:
           </span>
-          ${sources.map((s, idx) => `
-            <a href="${sanitizeUrl(s.url)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[11px] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition inline-flex items-center gap-1 truncate max-w-xs">
-              <span class="text-[var(--text-muted)]">[${idx + 1}]</span>
-              <span class="truncate">${escapeHtml(s.title)}</span>
-            </a>
-          `).join('')}
+          ${sources.map((s, idx) => {
+            let domain = s.domain;
+            if (!domain && s.url) {
+              try { domain = new URL(s.url).hostname.replace(/^www\./, ''); } catch { domain = ''; }
+            }
+            return `
+              <a href="${sanitizeUrl(s.url)}" target="_blank" rel="noopener noreferrer" class="matte-source-chip" title="${escapeHtml(s.title || '')}">
+                <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] flex-shrink-0"></span>
+                ${domain ? `<span class="font-semibold text-[10px] text-[var(--text-muted)]">${escapeHtml(domain)}</span>` : ''}
+                <span class="truncate">${escapeHtml(s.title || 'Source')}</span>
+                ${s.age ? `<span class="text-[10px] text-[var(--text-muted)] flex-shrink-0">(${escapeHtml(s.age)})</span>` : ''}
+              </a>
+            `;
+          }).join('')}
         </div>`;
+        this.scrollToBottom();
       },
       updateContent: (markdown) => {
         bodyEl.innerHTML = MarkdownRenderer.render(markdown);
         this.scrollToBottom();
       },
       finalize: (finalMsg) => {
-        // Collapse thinking accordion once stream ends
+        searchingStatus.innerHTML = '';
+        searchingStatus.className = 'hidden';
+
         const acc = thinkingPlaceholder.querySelector('.thought-accordion-content');
         if (acc) {
           acc.classList.remove('expanded');
@@ -345,4 +463,3 @@ export class MessagesComponent {
     }
   }
 }
-

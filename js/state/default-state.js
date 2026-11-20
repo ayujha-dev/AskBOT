@@ -29,7 +29,7 @@ export const defaultState = {
   modes: {
     codeInterpreter: false,
     webSearch: false,
-    thinkingLevel: 'off' // 'off' | 'low' | 'medium' | 'high'
+    thinkingLevel: 'low' // Minimum 'low' | 'medium' | 'high' (no off state)
   },
 
   // Authentic chat conversations

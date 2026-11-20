@@ -1,11 +1,20 @@
 import { escapeHtml } from '../../utils/dom.js';
+import { TokenCounter } from '../../services/token-counter.js';
+import { store } from '../../state/store.js';
 
 /**
- * ChatNavRail: Sleek, high-craft navigation rail for the chat section.
- * Enables quick jumping between conversation turns and filtering by outputs (Code, Search, Thoughts).
+ * ChatNavRail: Minimalist, whisper-quiet tracking rail for the chat section.
+ * Features:
+ * 1. Conversation Minimap / Hairline Jump Ticks with prompt tooltips.
+ * 2. Context Window Meter (thin vertical fill bar; turns amber >80%; opens drawer).
+ * 3. Quick Mode Micro-Indicators (Search, Code, Thinking).
  */
 export class ChatNavRail {
-  constructor() {
+  constructor(options = {}) {
+    this.onOpenParameters = options.onOpenParameters || (() => {
+      store.setState({ parametersDrawerOpen: true });
+    });
+
     this.railEl = document.getElementById('chat-nav-rail');
     this.canvasEl = document.getElementById('chat-canvas');
     this.turnsTrackEl = document.getElementById('rail-turns-track');
@@ -21,6 +30,13 @@ export class ChatNavRail {
 
     this.btnJumpThought = document.getElementById('btn-rail-jump-thought');
     this.badgeThought = document.getElementById('rail-badge-thought');
+
+    this.contextMeter = document.getElementById('rail-context-meter');
+    this.contextMeterFill = document.getElementById('rail-context-meter-fill');
+
+    this.indicatorSearch = document.getElementById('rail-indicator-search');
+    this.indicatorCode = document.getElementById('rail-indicator-code');
+    this.indicatorThink = document.getElementById('rail-indicator-think');
 
     this.turns = [];
     this.codeTargets = [];
@@ -46,6 +62,12 @@ export class ChatNavRail {
     if (this.btnBottom) {
       this.btnBottom.addEventListener('click', () => {
         this.canvasEl.scrollTo({ top: this.canvasEl.scrollHeight, behavior: 'smooth' });
+      });
+    }
+
+    if (this.contextMeter) {
+      this.contextMeter.addEventListener('click', () => {
+        this.onOpenParameters();
       });
     }
 
@@ -78,6 +100,53 @@ export class ChatNavRail {
         isTicking = true;
       }
     }, { passive: true });
+
+    // Store subscription for live mode and parameter changes
+    store.subscribe((state, changedKeys) => {
+      if (changedKeys.includes('modes')) {
+        this.syncModesIndicators(state.modes);
+      }
+      if (changedKeys.includes('parameters') && this.currentMessages) {
+        this.updateContextMeter(this.currentMessages, state.parameters);
+      }
+    });
+
+    this.syncModesIndicators(store.getState().modes);
+  }
+
+  syncModesIndicators(modes = store.getState().modes) {
+    if (!modes) return;
+
+    if (this.indicatorSearch) {
+      if (modes.webSearch) {
+        this.indicatorSearch.className = 'w-1.5 h-1.5 rounded-full bg-sky-400 shadow-sm animate-pulse';
+        this.indicatorSearch.title = 'Web Search Mode: Active';
+      } else {
+        this.indicatorSearch.className = 'w-1.5 h-1.5 rounded-full bg-zinc-600/40';
+        this.indicatorSearch.title = 'Web Search Mode: Inactive';
+      }
+    }
+
+    if (this.indicatorCode) {
+      if (modes.codeInterpreter) {
+        this.indicatorCode.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm animate-pulse';
+        this.indicatorCode.title = 'Code Interpreter: Active';
+      } else {
+        this.indicatorCode.className = 'w-1.5 h-1.5 rounded-full bg-zinc-600/40';
+        this.indicatorCode.title = 'Code Interpreter: Inactive';
+      }
+    }
+
+    if (this.indicatorThink) {
+      const level = modes.thinkingLevel || 'low';
+      if (level !== 'off') {
+        this.indicatorThink.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 shadow-sm';
+        this.indicatorThink.title = `Thinking Mode: ${level.toUpperCase()}`;
+      } else {
+        this.indicatorThink.className = 'w-1.5 h-1.5 rounded-full bg-zinc-600/40';
+        this.indicatorThink.title = 'Thinking Mode: Off';
+      }
+    }
   }
 
   jumpToNext(targetList, indexProp) {
@@ -91,14 +160,13 @@ export class ChatNavRail {
   }
 
   update(messages) {
+    this.currentMessages = messages;
     if (!this.railEl || !this.turnsTrackEl) return;
 
     if (!messages || messages.length === 0) {
       this.railEl.dataset.visible = 'false';
       this.turnsTrackEl.innerHTML = '';
-      if (this.btnJumpCode) this.btnJumpCode.classList.add('hidden');
-      if (this.btnJumpSearch) this.btnJumpSearch.classList.add('hidden');
-      if (this.btnJumpThought) this.btnJumpThought.classList.add('hidden');
+      if (this.contextMeterFill) this.contextMeterFill.style.height = '0%';
       return;
     }
 
@@ -112,7 +180,7 @@ export class ChatNavRail {
 
     let currentTurn = null;
 
-    messages.forEach((msg, idx) => {
+    messages.forEach((msg) => {
       if (msg.role === 'user') {
         currentTurn = {
           turnNumber: this.turns.length + 1,
@@ -140,27 +208,36 @@ export class ChatNavRail {
       }
     });
 
-    // Update Jump Filter Badges
-    this.updateJumpButton(this.btnJumpCode, this.badgeCode, this.codeTargets.length);
-    this.updateJumpButton(this.btnJumpSearch, this.badgeSearch, this.searchTargets.length);
-    this.updateJumpButton(this.btnJumpThought, this.badgeThought, this.thoughtTargets.length);
+    if (this.badgeCode) this.badgeCode.textContent = String(this.codeTargets.length);
+    if (this.badgeSearch) this.badgeSearch.textContent = String(this.searchTargets.length);
+    if (this.badgeThought) this.badgeThought.textContent = String(this.thoughtTargets.length);
 
-    // Render Turn Dots in Track
-    this.renderTurnDots();
+    this.renderTurnTicks();
+    this.updateContextMeter(messages, store.getState().parameters);
+    this.syncModesIndicators(store.getState().modes);
     this.highlightCurrentTurn();
   }
 
-  updateJumpButton(buttonEl, badgeEl, count) {
-    if (!buttonEl) return;
-    if (count > 0) {
-      buttonEl.classList.remove('hidden');
-      if (badgeEl) badgeEl.textContent = String(count);
+  updateContextMeter(messages, parameters = {}) {
+    if (!this.contextMeter || !this.contextMeterFill) return;
+
+    const budget = parameters.contextBudgetTokens || 8192;
+    const estimatedTokens = TokenCounter.estimateMessagesTokens(messages);
+    const pct = Math.min(100, Math.round((estimatedTokens / budget) * 100));
+
+    this.contextMeterFill.style.height = `${pct}%`;
+
+    if (pct >= 80) {
+      this.contextMeterFill.classList.add('warning');
     } else {
-      buttonEl.classList.add('hidden');
+      this.contextMeterFill.classList.remove('warning');
     }
+
+    const titleText = `Context Budget: ${estimatedTokens.toLocaleString()} / ${budget.toLocaleString()} tokens (${pct}%) • Click to adjust`;
+    this.contextMeter.title = titleText;
   }
 
-  renderTurnDots() {
+  renderTurnTicks() {
     this.turnsTrackEl.innerHTML = '';
 
     this.turns.forEach(turn => {
@@ -168,18 +245,18 @@ export class ChatNavRail {
       item.className = 'nav-rail-item relative flex items-center justify-center p-1 cursor-pointer';
       item.setAttribute('data-turn-id', turn.userMessageId);
 
-      // Tooltip content
-      const excerpt = turn.promptText.slice(0, 60).trim() + (turn.promptText.length > 60 ? '...' : '');
+      const excerpt = turn.promptText.slice(0, 70).trim() + (turn.promptText.length > 70 ? '...' : '');
       const badgePills = [
-        turn.hasCode ? '<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold text-[9px]">Code</span>' : '',
-        turn.hasSearch ? '<span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 font-semibold text-[9px]">Web</span>' : '',
-        turn.hasThought ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-semibold text-[9px]">Think</span>' : ''
+        turn.hasCode ? '<span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-semibold text-[9px]">Code</span>' : '',
+        turn.hasSearch ? '<span class="px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-400 font-semibold text-[9px]">Web</span>' : '',
+        turn.hasThought ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-semibold text-[9px]">Think</span>' : ''
       ].filter(Boolean).join(' ');
 
       item.innerHTML = `
-        <div class="nav-rail-dot" id="rail-dot-${turn.userMessageId}"></div>
-        <div class="nav-tooltip p-2 rounded-xl glass-card text-xs text-[var(--text-primary)] shadow-xl flex flex-col gap-1 border border-[var(--surface-border)]">
-          <div class="flex items-center justify-between gap-3 text-[10px] text-[var(--text-muted)] font-semibold">
+        <div class="nav-rail-tick" id="rail-tick-${turn.userMessageId}"></div>
+        <div class="nav-rail-dot hidden" id="rail-dot-${turn.userMessageId}"></div>
+        <div class="nav-tooltip p-2.5 rounded-xl glass-card text-xs text-[var(--text-primary)] shadow-xl flex flex-col gap-1.5 border border-[var(--surface-border)]">
+          <div class="flex items-center justify-between gap-4 text-[10px] text-[var(--text-muted)] font-semibold">
             <span>TURN ${turn.turnNumber}</span>
             <div class="flex gap-1">${badgePills}</div>
           </div>
@@ -214,12 +291,18 @@ export class ChatNavRail {
       }
     }
 
-    const dots = this.turnsTrackEl.querySelectorAll('.nav-rail-dot');
-    dots.forEach(d => d.classList.remove('active'));
-
-    const activeDot = document.getElementById(`rail-dot-${activeTurnId}`);
-    if (activeDot) {
-      activeDot.classList.add('active');
-    }
+    const items = this.turnsTrackEl.querySelectorAll('.nav-rail-item');
+    items.forEach(item => {
+      const isTurnActive = item.getAttribute('data-turn-id') === activeTurnId;
+      if (isTurnActive) {
+        item.classList.add('active');
+        item.querySelector('.nav-rail-tick')?.classList.add('active');
+        item.querySelector('.nav-rail-dot')?.classList.add('active');
+      } else {
+        item.classList.remove('active');
+        item.querySelector('.nav-rail-tick')?.classList.remove('active');
+        item.querySelector('.nav-rail-dot')?.classList.remove('active');
+      }
+    });
   }
 }

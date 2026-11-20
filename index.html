@@ -138,16 +138,6 @@
         </span>
       </div>
 
-      <!-- Exact Center: Active Model & Engine Selector -->
-      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
-        <div id="header-model-badge" class="px-3.5 py-1.5 rounded-full text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] flex items-center gap-2 cursor-pointer hover:border-[var(--accent-blue)] ui-spring shadow-sm max-w-[240px] sm:max-w-xs" title="Click to switch AI Model & Provider">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
-          <span id="header-provider-pill" class="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-r border-[var(--surface-border)] pr-2 flex-shrink-0">GROQ</span>
-          <span id="header-model-name" class="truncate font-medium text-[11px] sm:text-xs">Loading...</span>
-          <svg class="w-3 h-3 text-[var(--text-muted)] flex-shrink-0"><use href="#icon-chevron-down"/></svg>
-        </div>
-      </div>
-
       <!-- Right Header Controls -->
       <div class="flex items-center gap-2">
         <!-- Quick New Chat Button in Header -->
@@ -172,8 +162,8 @@
     <!-- Conversational Canvas -->
     <main id="chat-canvas" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 md:py-6 relative flex flex-col items-center">
       
-      <!-- Subtle Foggy Glass Panel for Ultra-Clean Text Legibility -->
-      <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-3xl my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
+      <!-- Subtle Foggy Glass Panel for Ultra-Clean Text Legibility (760px width centered) -->
+      <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-[760px] my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
         <!-- Empty State: Dynamic Greeting & Suggestions -->
         <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
           <div class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[11px] text-[var(--text-muted)]">
@@ -199,49 +189,55 @@
         </div>
       </div>
 
-      <!-- Chat Section Output Navigation Rail -->
-      <aside id="chat-nav-rail" class="hidden xl:flex fixed right-4 top-24 bottom-28 w-11 flex-col items-center justify-between py-2.5 rounded-2xl chat-nav-rail z-20 ui-transition opacity-0 pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto shadow-lg" title="Chat Navigation Rail">
-        <div class="flex flex-col items-center gap-2">
+      <!-- Chat Section Output Navigation Rail (Ultra-Slim Minimalist Profile) -->
+      <aside id="chat-nav-rail" class="hidden xl:flex fixed right-3 top-20 bottom-24 w-8 flex-col items-center justify-between py-2 rounded-2xl chat-nav-rail z-20 ui-transition opacity-0 pointer-events-none data-[visible=true]:opacity-100 data-[visible=true]:pointer-events-auto" title="Conversation Minimap & Session State">
+        <!-- Top Actions & Mode Micro-Indicators -->
+        <div class="flex flex-col items-center gap-1.5 w-full">
           <!-- Scroll to top -->
-          <button id="btn-rail-top" class="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to top">
+          <button id="btn-rail-top" class="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to top">
             <svg class="w-3.5 h-3.5"><use href="#icon-chevron-down" style="transform: rotate(180deg); transform-origin: center;"/></svg>
           </button>
           
-          <div class="w-5 h-[1px] bg-[var(--surface-border)]"></div>
+          <!-- Mode Micro-Indicators -->
+          <div id="rail-modes-indicator" class="flex flex-col items-center gap-1 py-1">
+            <span id="rail-indicator-search" class="w-1.5 h-1.5 rounded-full bg-sky-400/30" title="Web Search Mode"></span>
+            <span id="rail-indicator-code" class="w-1.5 h-1.5 rounded-full bg-emerald-400/30" title="Code Interpreter Mode"></span>
+            <span id="rail-indicator-think" class="w-1.5 h-1.5 rounded-full bg-amber-400/30" title="Reasoning / Thinking Mode"></span>
+          </div>
+
+          <!-- Hidden jump hooks for keyboard/filter compatibility -->
+          <button id="btn-rail-jump-code" class="hidden"><span id="rail-badge-code">0</span></button>
+          <button id="btn-rail-jump-search" class="hidden"><span id="rail-badge-search">0</span></button>
+          <button id="btn-rail-jump-thought" class="hidden"><span id="rail-badge-thought">0</span></button>
           
-          <!-- Quick Jump Filters for Different Outputs -->
-          <button id="btn-rail-jump-code" class="p-1.5 rounded-lg text-emerald-400 hover:bg-emerald-500/10 ui-transition relative hidden" title="Jump to next Python Code execution">
-            <svg class="w-3.5 h-3.5"><use href="#icon-python"/></svg>
-            <span id="rail-badge-code" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
-          </button>
-          <button id="btn-rail-jump-search" class="p-1.5 rounded-lg text-sky-400 hover:bg-sky-500/10 ui-transition relative hidden" title="Jump to next Web Search citations">
-            <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
-            <span id="rail-badge-search" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-sky-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
-          </button>
-          <button id="btn-rail-jump-thought" class="p-1.5 rounded-lg text-amber-400 hover:bg-amber-500/10 ui-transition relative hidden" title="Jump to next Thought Process">
-            <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
-            <span id="rail-badge-thought" class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
-          </button>
+          <div class="w-4 h-[1px] bg-[var(--surface-border)]"></div>
         </div>
 
-        <!-- Scrollable Vertical Track of Message Turn Dots -->
-        <div id="rail-turns-track" class="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-center gap-3 w-full">
-          <!-- Dynamic turn dots with prompt tooltips -->
+        <!-- Scrollable Vertical Track of Minimap Ticks -->
+        <div id="rail-turns-track" class="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-center gap-2.5 w-full">
+          <!-- Dynamic turn ticks with prompt tooltips -->
         </div>
 
-        <div class="flex flex-col items-center gap-2">
-          <div class="w-5 h-[1px] bg-[var(--surface-border)]"></div>
+        <!-- Bottom Controls & Context Window Meter -->
+        <div class="flex flex-col items-center gap-2 w-full">
+          <div class="w-4 h-[1px] bg-[var(--surface-border)]"></div>
+
+          <!-- Context Window Token Meter -->
+          <div id="rail-context-meter" class="context-meter-track" title="Context Token Budget (Click to adjust)">
+            <div id="rail-context-meter-fill" class="context-meter-fill h-0"></div>
+          </div>
+
           <!-- Scroll to latest -->
-          <button id="btn-rail-bottom" class="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to latest">
+          <button id="btn-rail-bottom" class="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-transition" title="Scroll to latest">
             <svg class="w-3.5 h-3.5"><use href="#icon-chevron-down"/></svg>
           </button>
         </div>
       </aside>
     </main>
 
-    <!-- Floating Pill Composer -->
+    <!-- Floating Pill Composer (Constrained to 760px) -->
     <div class="p-4 md:pb-6 flex justify-center flex-shrink-0 z-10 pointer-events-none">
-      <div id="chat-composer" class="w-full max-w-3xl composer-box pointer-events-auto p-2.5 flex flex-col gap-2">
+      <div id="chat-composer" class="w-full max-w-[760px] composer-box pointer-events-auto p-2.5 flex flex-col gap-2">
         
         <!-- Attached Files Preview Tray -->
         <div id="attachment-preview-tray" class="flex items-center gap-2 flex-wrap px-2 pt-1 empty:hidden">
@@ -291,17 +287,19 @@
               <span id="web-search-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
             </button>
 
-            <!-- Thinking Mode Selector Pill -->
+            <!-- Thinking Mode Selector Pill (Min: Low, No Off State) -->
             <div class="relative inline-block">
-              <button id="btn-thinking-menu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth">
+              <button id="btn-thinking-menu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--accent-blue)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth (Minimum: Low)">
                 <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
-                <span>Thinking: <strong id="thinking-level-label" class="font-semibold text-[var(--text-primary)]">Off</strong></span>
+                <span>Thinking: <strong id="thinking-level-label" class="font-semibold text-[var(--text-primary)]">Low</strong></span>
                 <svg class="w-2.5 h-2.5 ml-0.5"><use href="#icon-chevron-down"/></svg>
               </button>
-              <!-- Thinking Dropdown -->
-              <div id="thinking-dropdown" class="hidden absolute bottom-full mb-1 left-0 w-36 py-1 rounded-xl glass-card z-30 text-xs">
-                <button data-level="off" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Off</button>
-                <button data-level="low" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Low</button>
+              <!-- Thinking Dropdown (3 levels: Low | Medium | High) -->
+              <div id="thinking-dropdown" class="hidden absolute bottom-full mb-1 left-0 w-36 py-1 rounded-xl glass-card z-30 text-xs shadow-xl">
+                <button data-level="low" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition flex items-center justify-between">
+                  <span>Low</span>
+                  <span class="text-[10px] text-[var(--text-muted)]">Default</span>
+                </button>
                 <button data-level="medium" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Medium</button>
                 <button data-level="high" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">High</button>
               </div>
@@ -491,7 +489,46 @@
 
         <!-- Tab 2: Web Grounding -->
         <div id="tab-panel-grounding" class="space-y-3.5 hidden">
-          <!-- Free Web Grounding Card -->
+          <!-- Primary: Brave Search API Card -->
+          <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
+                <span class="font-semibold text-xs text-[var(--text-primary)]">Brave Search API (Recommended for Real-Time Facts)</span>
+              </div>
+              <a href="https://api-dashboard.search.brave.com" target="_blank" rel="noopener noreferrer" class="text-[11px] text-[var(--accent-blue)] hover:underline flex items-center gap-1 font-medium">
+                <span>Free $5/mo Credits &rarr;</span>
+              </a>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              Brave Search API queries live web indices and LLM grounding contexts for real-time news, citations, and verified answers. Brave provides <strong>$5.00/month in free search requests</strong> for developer accounts.
+            </p>
+
+            <div class="space-y-2 pt-1">
+              <div>
+                <label for="key-input-brave" class="block text-[11px] font-medium text-[var(--text-secondary)] mb-1">Brave API Subscription Token</label>
+                <div class="flex gap-2">
+                  <input type="password" id="key-input-brave" placeholder="BSA..." class="flex-1 px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono text-xs">
+                  <button id="btn-save-brave" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] hover:bg-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)]">Save</button>
+                </div>
+              </div>
+
+              <div>
+                <label for="proxy-input-brave" class="block text-[11px] font-medium text-[var(--text-secondary)] mb-1">
+                  Local CORS Proxy URL <span class="text-[10px] text-[var(--text-muted)]">(Optional, for browser CORS bypass)</span>
+                </label>
+                <div class="flex gap-2">
+                  <input type="text" id="proxy-input-brave" placeholder="http://localhost:8787/brave-search" class="flex-1 px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)] font-mono text-xs">
+                  <button id="btn-save-brave-proxy" class="px-3 py-1.5 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-card)] hover:bg-[var(--surface-border)] font-medium text-xs ui-transition text-[var(--text-primary)]">Save</button>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] mt-1">
+                  To bypass browser CORS, run <code class="text-[var(--accent-blue)]">node proxy.mjs</code> in your terminal and leave the proxy URL set to <code class="text-[var(--accent-blue)]">http://localhost:8787/brave-search</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Free Fallback: DuckDuckGo & Wikipedia Grounding Card -->
           <div class="p-4 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">

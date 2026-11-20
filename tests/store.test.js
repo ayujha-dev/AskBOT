@@ -22,7 +22,7 @@ test('Task 2: defaultState has expected shape and defaults', async () => {
   assert.equal(defaultState.parameters.contextBudgetTokens, 8192);
   assert.equal(defaultState.modes.codeInterpreter, false);
   assert.equal(defaultState.modes.webSearch, false);
-  assert.equal(defaultState.modes.thinkingLevel, 'off');
+  assert.equal(defaultState.modes.thinkingLevel, 'low');
   assert.deepEqual(defaultState.chats, [], 'Must enforce zero dummy/mock chats');
   assert.equal(defaultState.currentChatId, null);
 });

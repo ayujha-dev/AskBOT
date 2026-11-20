@@ -122,8 +122,9 @@ export class GeminiProvider extends BaseProvider {
       payload.tools = [{ googleSearch: {} }];
     }
 
-    // Native thinkingConfig if thinking is enabled
-    if (modes.thinkingLevel && modes.thinkingLevel !== 'off') {
+    // Native thinkingConfig for Gemini models supporting reasoning
+    const isThinkingSupported = modelId.includes('2.0') || modelId.includes('2.5') || modelId.includes('thinking');
+    if (isThinkingSupported && modes.thinkingLevel && modes.thinkingLevel !== 'off') {
       const budgetMap = { low: 1024, medium: 4096, high: 8192 };
       payload.generationConfig.thinkingConfig = {
         thinkingBudget: budgetMap[modes.thinkingLevel] || 2048

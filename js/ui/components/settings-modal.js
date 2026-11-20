@@ -51,6 +51,11 @@ export class SettingsModal {
     this.tavilyInput = document.getElementById('key-input-tavily');
     this.btnSaveTavily = document.getElementById('btn-save-tavily');
 
+    this.braveInput = document.getElementById('key-input-brave');
+    this.btnSaveBrave = document.getElementById('btn-save-brave');
+    this.braveProxyInput = document.getElementById('proxy-input-brave');
+    this.btnSaveBraveProxy = document.getElementById('btn-save-brave-proxy');
+
     this.init();
   }
 
@@ -85,6 +90,23 @@ export class SettingsModal {
         const val = this.tavilyInput.value.trim();
         store.setApiKey('tavily', val);
         alert('Tavily search key saved.');
+      });
+    }
+
+    // Save Brave Search key & proxy URL
+    if (this.btnSaveBrave && this.braveInput) {
+      this.btnSaveBrave.addEventListener('click', () => {
+        const val = this.braveInput.value.trim();
+        store.setApiKey('brave', val);
+        alert('Brave Search API key saved.');
+      });
+    }
+
+    if (this.btnSaveBraveProxy && this.braveProxyInput) {
+      this.btnSaveBraveProxy.addEventListener('click', () => {
+        const val = this.braveProxyInput.value.trim();
+        store.setApiKey('braveProxyUrl', val);
+        alert('Brave Search proxy URL saved.');
       });
     }
 
@@ -182,6 +204,12 @@ export class SettingsModal {
 
     if (this.tavilyInput) {
       this.tavilyInput.value = currentKeys.tavily || '';
+    }
+    if (this.braveInput) {
+      this.braveInput.value = currentKeys.brave || '';
+    }
+    if (this.braveProxyInput) {
+      this.braveProxyInput.value = currentKeys.braveProxyUrl || '';
     }
 
     for (const [providerId, config] of Object.entries(SettingsModal.PROVIDERS_CONFIG)) {
@@ -351,14 +379,22 @@ export class SettingsModal {
       testBtn.disabled = true;
       testBtn.textContent = 'Searching...';
       resultsEl.classList.remove('hidden');
-      resultsEl.innerHTML = '<div class="text-[var(--text-muted)]">Querying DuckDuckGo + Wikipedia...</div>';
+
+      const currentApiKeys = store.getState().apiKeys || {};
+      const isBraveActive = Boolean(currentApiKeys.brave || currentApiKeys.braveProxyUrl);
+      resultsEl.innerHTML = `<div class="text-[var(--text-muted)]">${isBraveActive ? 'Querying Brave Search API...' : 'Querying DuckDuckGo + Wikipedia...'}</div>`;
 
       try {
-        const { context, sources } = await SearchService.executeSearch(q, store.getState().apiKeys.tavily);
+        const { context, sources } = await SearchService.executeSearch(q, {
+          braveApiKey: currentApiKeys.brave,
+          braveProxyUrl: currentApiKeys.braveProxyUrl,
+          tavilyApiKey: currentApiKeys.tavily
+        });
         if (sources.length > 0) {
           let html = `<div class="font-semibold text-emerald-400">Found ${sources.length} live sources:</div>`;
-          sources.slice(0, 3).forEach(s => {
-            html += `<div class="truncate"><a href="${s.url}" target="_blank" class="text-[var(--accent-cyan)] hover:underline">${escapeHtml(s.title)}</a>: <span class="text-[var(--text-muted)]">${escapeHtml(s.snippet.slice(0, 90))}...</span></div>`;
+          sources.slice(0, 4).forEach(s => {
+            const domain = s.domain ? `<span class="text-[10px] text-[var(--accent-blue)]">(${escapeHtml(s.domain)})</span> ` : '';
+            html += `<div class="truncate"><a href="${s.url}" target="_blank" class="text-[var(--accent-cyan)] hover:underline">${escapeHtml(s.title)}</a> ${domain}: <span class="text-[var(--text-muted)]">${escapeHtml((s.snippet || '').slice(0, 90))}...</span></div>`;
           });
           resultsEl.innerHTML = html;
         } else {

@@ -37,8 +37,9 @@ test('Enhancements: Glassmorphism and Mode UI elements exist in DOM & styles', a
   assert.ok(html.includes('id="toggle-web-search"'), 'Composer button for web search must exist');
   assert.ok(html.includes('id="code-interpreter-status-badge"'), 'Composer badge dot for code interpreter must exist');
   assert.ok(html.includes('id="web-search-status-badge"'), 'Composer badge dot for web search must exist');
-  assert.ok(html.includes('id="header-model-badge"'), 'Header model badge must exist in center');
-  assert.ok(html.includes('id="header-provider-pill"'), 'Header provider pill must exist in center');
+  assert.ok(html.includes('id="composer-model-pill"'), 'In-composer model pill must exist');
+  assert.ok(html.includes('id="composer-model-name"'), 'In-composer model name must exist');
+  assert.ok(!html.includes('id="header-model-badge"'), 'Header must stay clean without model controls');
 
   const css = fs.readFileSync(path.resolve('css/main.css'), 'utf-8');
   assert.ok(css.includes('--glass-blur'), 'CSS must define glass blur token');

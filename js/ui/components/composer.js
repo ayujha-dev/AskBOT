@@ -197,17 +197,15 @@ export class ComposerComponent {
         : 'w-1.5 h-1.5 rounded-full bg-zinc-500';
     }
 
-    // Thinking Label
-    if (this.thinkingLabel && modes.thinkingLevel) {
-      const display = modes.thinkingLevel.charAt(0).toUpperCase() + modes.thinkingLevel.slice(1);
+    // Thinking Label (Minimum: Low, No Off State)
+    if (this.thinkingLabel) {
+      const level = modes.thinkingLevel || 'low';
+      const display = level.charAt(0).toUpperCase() + level.slice(1);
       this.thinkingLabel.textContent = display;
 
-      if (modes.thinkingLevel !== 'off' && this.btnThinking) {
+      if (this.btnThinking) {
         this.btnThinking.classList.add('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
         this.btnThinking.classList.remove('text-[var(--text-muted)]');
-      } else if (this.btnThinking) {
-        this.btnThinking.classList.remove('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
-        this.btnThinking.classList.add('text-[var(--text-muted)]');
       }
     }
   }

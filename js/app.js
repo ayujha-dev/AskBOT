@@ -27,9 +27,15 @@ class AppCoordinator {
     // 1. Initialize UI Subsystems
     BackgroundEffects.init();
     this.parametersDrawer = new ParametersDrawer();
-    this.chatNavRail = new ChatNavRail();
+    this.chatNavRail = new ChatNavRail({
+      onOpenParameters: () => store.setState({ parametersDrawerOpen: true })
+    });
     this.fileManager = new FileManager();
-    this.messagesComponent = new MessagesComponent();
+    
+    this.messagesComponent = new MessagesComponent({
+      onRegenerate: (msgId) => this.handleRegenerateMessage(msgId),
+      onEditPrompt: (text) => this.handleEditPrompt(text)
+    });
 
     this.suggestionsComponent = new SuggestionsComponent((prompt, mode) => {
       this.handleSuggestionSelect(prompt, mode);
@@ -54,9 +60,7 @@ class AppCoordinator {
       onSelectModel: (pill) => this.showModelPickerDropdown(pill, 'top')
     });
 
-    // 2. Wire Header Controls: Model Picker, New Chat
-    this.wireHeaderModelPicker();
-
+    // 2. Wire New Chat Button in Header
     const headerNewChatBtn = document.getElementById('header-btn-new-chat');
     if (headerNewChatBtn) {
       headerNewChatBtn.addEventListener('click', () => {
@@ -105,87 +109,115 @@ class AppCoordinator {
     }
   }
 
-  wireHeaderModelPicker() {
-    const badge = document.getElementById('header-model-badge');
-    if (!badge) return;
-
-    badge.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.showModelPickerDropdown(badge, 'bottom');
-    });
-  }
-
-  showModelPickerDropdown(anchorEl, placement = 'bottom') {
-    let dropdown = document.getElementById('header-model-dropdown');
+  showModelPickerDropdown(anchorEl, placement = 'top') {
+    let dropdown = document.getElementById('composer-model-dropdown');
     if (dropdown) {
       dropdown.remove();
       return;
     }
 
-    const { activeProvider, cachedModels, selectedModel } = store.getState();
-    const models = (cachedModels[activeProvider] && cachedModels[activeProvider].length > 0)
+    const { activeProvider, cachedModels, selectedModel, apiKeys } = store.getState();
+    const allModels = (cachedModels[activeProvider] && cachedModels[activeProvider].length > 0)
       ? cachedModels[activeProvider]
       : ProviderRegistry.getFallbackModels(activeProvider);
 
     dropdown = document.createElement('div');
-    dropdown.id = 'header-model-dropdown';
+    dropdown.id = 'composer-model-dropdown';
 
-    let positionClass = 'absolute top-full mt-2 left-1/2 -translate-x-1/2 w-72';
-    if (placement === 'top') {
-      positionClass = 'absolute bottom-full mb-2 left-0 w-72';
-    } else if (placement === 'sidebar') {
+    let positionClass = 'absolute bottom-full mb-2 left-0 w-80';
+    if (placement === 'sidebar') {
       positionClass = 'absolute bottom-full mb-2 left-0 right-0 w-full';
     }
 
-    dropdown.className = `${positionClass} max-h-96 overflow-y-auto rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-xl z-50 p-2 text-xs`;
+    dropdown.className = `${positionClass} max-h-96 overflow-hidden flex flex-col rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] shadow-2xl z-50 p-3 text-xs`;
 
     // Provider Tabs
     const providers = ProviderRegistry.getSupportedProviders();
     let providerTabsHtml = '<div class="flex items-center gap-1 overflow-x-auto pb-2 mb-2 border-b border-[var(--surface-border)]">';
     for (const p of providers) {
       const isCurrentP = p === activeProvider;
-      providerTabsHtml += `<button class="btn-tab-provider px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider ${
+      const hasKey = Boolean(apiKeys[p]);
+      providerTabsHtml += `<button class="btn-tab-provider px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 ui-transition ${
         isCurrentP
-          ? 'bg-[var(--accent-blue)] text-white'
+          ? 'bg-[var(--accent-blue)] text-white shadow-sm'
           : 'bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-      }" data-provider="${p}">${p}</button>`;
+      }" data-provider="${p}">
+        <span class="w-1.5 h-1.5 rounded-full ${hasKey ? (isCurrentP ? 'bg-white' : 'bg-emerald-400') : 'bg-zinc-500/40'}"></span>
+        <span>${p}</span>
+      </button>`;
     }
     providerTabsHtml += '</div>';
 
     dropdown.innerHTML = `
       ${providerTabsHtml}
+      
+      <!-- Quick Model Search Filter -->
+      <div class="mb-2">
+        <input type="text" id="model-search-filter" placeholder="Filter ${activeProvider.toUpperCase()} models..." class="w-full px-2.5 py-1.5 text-xs rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] outline-none focus:border-[var(--accent-blue)]">
+      </div>
+
       <div class="px-1 py-1 font-semibold text-[10px] uppercase tracking-wider text-[var(--text-muted)] flex items-center justify-between mb-1">
         <span>${activeProvider.toUpperCase()} MODELS</span>
         <span class="text-[10px] font-normal text-[var(--accent-blue)] cursor-pointer hover:underline" id="btn-dropdown-refresh">Refresh</span>
       </div>
-      <div id="dropdown-models-list" class="space-y-1"></div>
+
+      <div id="dropdown-models-list" class="space-y-1 overflow-y-auto max-h-56 pr-1"></div>
     `;
 
     const listEl = dropdown.querySelector('#dropdown-models-list');
+    const filterInput = dropdown.querySelector('#model-search-filter');
 
-    models.forEach(m => {
-      const isSelected = m.id === selectedModel;
-      const item = document.createElement('button');
-      item.className = `w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between text-xs ui-transition ${
-        isSelected
-          ? 'bg-[var(--accent-subtle)] text-[var(--accent-blue)] font-medium'
-          : 'text-[var(--text-primary)] hover:bg-[var(--surface-panel)]'
-      }`;
+    const renderModelItems = (filteredList) => {
+      listEl.innerHTML = '';
+      if (filteredList.length === 0) {
+        listEl.innerHTML = '<div class="p-3 text-center text-[var(--text-muted)] text-[11px]">No matching models found.</div>';
+        return;
+      }
 
-      item.innerHTML = `
-        <div class="truncate pr-2">
-          <div class="truncate font-medium">${m.name || m.id}</div>
-          <div class="text-[10px] text-[var(--text-muted)] truncate">${m.id}</div>
-        </div>
-        ${isSelected ? '<svg class="w-3.5 h-3.5 text-[var(--accent-blue)] flex-shrink-0"><use href="#icon-check"/></svg>' : ''}
-      `;
+      filteredList.forEach(m => {
+        const isSelected = m.id === selectedModel;
+        const item = document.createElement('button');
+        item.className = `w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between text-xs ui-transition ${
+          isSelected
+            ? 'bg-[var(--accent-subtle)] text-[var(--accent-blue)] font-medium border border-[var(--accent-blue)]/30'
+            : 'text-[var(--text-primary)] hover:bg-[var(--surface-panel)] border border-transparent'
+        }`;
 
-      item.addEventListener('click', () => {
-        store.setState({ selectedModel: m.id });
-        dropdown.remove();
+        const idLower = m.id.toLowerCase();
+        const isVision = idLower.includes('vision') || idLower.includes('4o') || idLower.includes('flash') || idLower.includes('pro') || idLower.includes('claude-3-5') || idLower.includes('claude-3-7');
+        const isReasoning = idLower.includes('r1') || idLower.includes('o1') || idLower.includes('o3') || idLower.includes('thinking') || idLower.includes('reasoning') || idLower.includes('3.7-sonnet');
+
+        const badges = [
+          isVision ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">Vision</span>' : '',
+          isReasoning ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">Reasoning</span>' : ''
+        ].filter(Boolean).join(' ');
+
+        item.innerHTML = `
+          <div class="truncate pr-2 flex-1">
+            <div class="flex items-center gap-1.5 truncate">
+              <span class="truncate font-medium">${m.name || m.id}</span>
+              ${badges}
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] truncate">${m.id}</div>
+          </div>
+          ${isSelected ? '<svg class="w-3.5 h-3.5 text-[var(--accent-blue)] flex-shrink-0"><use href="#icon-check"/></svg>' : ''}
+        `;
+
+        item.addEventListener('click', () => {
+          store.setState({ selectedModel: m.id });
+          dropdown.remove();
+        });
+
+        listEl.appendChild(item);
       });
+    };
 
-      listEl.appendChild(item);
+    renderModelItems(allModels);
+
+    filterInput.addEventListener('input', () => {
+      const q = filterInput.value.toLowerCase().trim();
+      const filtered = allModels.filter(m => (m.name || '').toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+      renderModelItems(filtered);
     });
 
     // Provider Tab Click Listener
@@ -207,6 +239,7 @@ class AppCoordinator {
 
     anchorEl.parentElement.style.position = 'relative';
     anchorEl.parentElement.appendChild(dropdown);
+    filterInput.focus();
 
     const closeHandler = (e) => {
       if (!dropdown.contains(e.target) && !anchorEl.contains(e.target)) {
@@ -256,50 +289,69 @@ class AppCoordinator {
     this.composer.setText(prompt);
   }
 
+  handleEditPrompt(text) {
+    if (this.composer) {
+      this.composer.setText(text);
+    }
+  }
+
+  handleRegenerateMessage(assistantMsgId) {
+    if (this.isStreaming) return;
+    const { currentChatId, chats } = store.getState();
+    const chat = chats.find(c => c.id === currentChatId);
+    if (!chat || !chat.messages) return;
+
+    const targetIdx = chat.messages.findIndex(m => m.id === assistantMsgId);
+    if (targetIdx <= 0) return;
+
+    const userMsg = chat.messages[targetIdx - 1];
+    if (userMsg.role !== 'user') return;
+
+    const trimmed = chat.messages.slice(0, targetIdx - 1);
+    store.updateChat(currentChatId, { messages: trimmed });
+
+    this.handleSendMessage(userMsg.content);
+  }
+
   startNewChat() {
-    store.setState({ currentChatId: null });
-    this.messagesComponent.render([]);
-    if (this.chatNavRail) {
-      this.chatNavRail.update([]);
-    }
-    this.suggestionsComponent.render(true);
-
-    const chatTitleEl = document.getElementById('header-chat-title');
-    if (chatTitleEl) {
-      chatTitleEl.textContent = 'New conversation';
-      chatTitleEl.title = 'New conversation';
-    }
-
-    const tokenCountEl = document.getElementById('header-token-count');
-    if (tokenCountEl) {
-      tokenCountEl.textContent = '0 tokens';
-    }
+    const newChat = store.createChat();
+    store.selectChat(newChat.id);
   }
 
   selectChat(chatId) {
-    store.setActiveChat(chatId);
+    store.selectChat(chatId);
   }
 
   refreshCurrentChat() {
-    const currentChat = store.getCurrentChat();
-    const messages = (currentChat && currentChat.messages) ? currentChat.messages : [];
-    this.messagesComponent.render(messages);
-    if (this.chatNavRail) {
-      this.chatNavRail.update(messages);
+    const { currentChatId, chats } = store.getState();
+    const currentChat = chats.find(c => c.id === currentChatId);
+
+    // Update Header conversation breadcrumb title
+    const headerTitle = document.getElementById('header-chat-title');
+    if (headerTitle) {
+      headerTitle.textContent = currentChat && currentChat.title ? currentChat.title : 'New conversation';
+      headerTitle.title = headerTitle.textContent;
     }
 
-    const chatTitleEl = document.getElementById('header-chat-title');
-    if (chatTitleEl) {
-      const title = currentChat?.title || 'New conversation';
-      chatTitleEl.textContent = title;
-      chatTitleEl.title = title;
+    if (!currentChat || !currentChat.messages || currentChat.messages.length === 0) {
+      this.messagesComponent.render([]);
+      this.chatNavRail.update([]);
+      this.updateTokenIndicator([]);
+      return;
     }
 
-    const tokenCountEl = document.getElementById('header-token-count');
-    if (tokenCountEl) {
-      const estTokens = TokenCounter.estimateMessagesTokens(messages);
-      tokenCountEl.textContent = `${estTokens.toLocaleString()} tokens`;
-    }
+    this.messagesComponent.render(currentChat.messages);
+    this.chatNavRail.update(currentChat.messages);
+    this.updateTokenIndicator(currentChat.messages);
+  }
+
+  updateTokenIndicator(messages) {
+    const count = TokenCounter.estimateMessagesTokens(messages);
+    const indicatorEl = document.getElementById('header-token-count');
+    const composerIndicator = document.getElementById('token-budget-indicator');
+    const text = `${count.toLocaleString()} tokens`;
+    if (indicatorEl) indicatorEl.textContent = text;
+    if (composerIndicator) composerIndicator.textContent = text;
   }
 
   async handleSendMessage(userPrompt) {
@@ -309,24 +361,21 @@ class AppCoordinator {
     const { activeProvider, selectedModel, apiKeys, parameters, modes } = state;
     const apiKey = apiKeys[activeProvider];
 
+    // Ensure user has configured the active provider's API key
     if (!apiKey) {
-      this.settingsModal.open();
-      alert(`Please configure an API key for ${activeProvider.toUpperCase()} in Settings first.`);
+      this.onboardingModal.open(activeProvider);
       return;
     }
 
-    // 1. Get or create chat
+    // 1. Ensure active chat exists
     let chatId = state.currentChatId;
-    let isNewChat = false;
-
     if (!chatId) {
-      const newTitle = SidebarComponent.generateTitle(userPrompt);
-      const newChat = store.addChat({ title: newTitle });
+      const newChat = store.createChat(SidebarComponent.generateTitle(userPrompt));
       chatId = newChat.id;
-      isNewChat = true;
+      store.selectChat(chatId);
     } else {
-      const existing = store.getChat(chatId);
-      if (existing && existing.messages.length === 0) {
+      const currentChat = store.getChat(chatId);
+      if (currentChat && (!currentChat.messages || currentChat.messages.length === 0)) {
         store.updateChat(chatId, { title: SidebarComponent.generateTitle(userPrompt) });
       }
     }
@@ -335,7 +384,7 @@ class AppCoordinator {
     const attachments = this.fileManager.getAttachments();
     const hasVideo = attachments.some(a => a.type === 'video');
     if (hasVideo && activeProvider !== 'gemini') {
-      alert(`Video analysis is currently supported natively by Google Gemini (Gemini 2.0 Flash / 1.5 Pro). Please switch your provider to Gemini in the top header or composer pill to analyze video clips.`);
+      alert(`Video analysis is currently supported natively by Google Gemini (Gemini 2.0 Flash / 1.5 Pro). Please switch your provider to Gemini in the composer model selector to analyze video clips.`);
       return;
     }
 
@@ -351,31 +400,56 @@ class AppCoordinator {
     // 4. Update UI view
     this.refreshCurrentChat();
 
-    // 5. Handle Web Search Grounding for non-Gemini providers (Gemini uses native googleSearch tool)
+    // 5. Setup streaming assistant placeholder
+    const assistantMsgId = 'msg_' + Date.now();
+    const streamingHandle = this.messagesComponent.createStreamingMessage(assistantMsgId);
+
+    // 6. Handle Web Search Grounding for non-Gemini providers (Gemini uses native googleSearch tool)
     let searchSources = [];
     let searchAugmentedPrompt = userPrompt;
 
     if (modes.webSearch && activeProvider !== 'gemini') {
+      const isBrave = Boolean(apiKeys.brave || apiKeys.braveProxyUrl);
+      streamingHandle.showSearchingStatus(isBrave ? 'Brave' : 'Web');
       try {
-        searchSources = await SearchService.search(userPrompt, { tavilyApiKey: apiKeys.tavily });
+        searchSources = await SearchService.search(userPrompt, {
+          braveApiKey: apiKeys.brave,
+          braveProxyUrl: apiKeys.braveProxyUrl,
+          tavilyApiKey: apiKeys.tavily
+        });
         if (searchSources.length > 0) {
           const contextSnippet = SearchService.formatSearchContext(searchSources);
           searchAugmentedPrompt = `${contextSnippet}\nUser Query: ${userPrompt}`;
         }
       } catch (err) {
         console.warn('Web search grounding error:', err);
+      } finally {
+        streamingHandle.hideSearchingStatus();
       }
     }
 
-    // 6. Build outgoing message history
+    // 7. Build outgoing message history
     const currentMessages = store.getChat(chatId).messages;
     const outgoingMessages = currentMessages.map((m, index) => {
-      // If last user message and search was augmented, swap content for request payload
       if (index === currentMessages.length - 1 && searchAugmentedPrompt !== userPrompt) {
         return { ...m, content: searchAugmentedPrompt };
       }
       return m;
     });
+
+    // If Search Mode is on, inject exact current date and grounding instructions
+    if (modes.webSearch) {
+      const todayDateStr = new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      outgoingMessages.unshift({
+        role: 'system',
+        content: `Today is ${todayDateStr}. Real-time web search results are provided in <web_search_results>. Prioritize the <web_search_results> over internal cut-off knowledge, and cite sources using [1], [2], etc.`
+      });
+    }
 
     // If Code Interpreter is on, prepend system instruction for Python code output
     if (modes.codeInterpreter) {
@@ -385,13 +459,9 @@ class AppCoordinator {
       });
     }
 
-    // 7. Apply Context Window Sliding Budget Trimming
+    // 8. Apply Context Window Sliding Budget Trimming
     const budget = parameters.contextBudgetTokens || 8192;
     const trimmedPayload = TokenCounter.trimToContextBudget(outgoingMessages, budget);
-
-    // 8. Setup streaming assistant placeholder
-    const assistantMsgId = 'msg_' + Date.now();
-    const streamingHandle = this.messagesComponent.createStreamingMessage(assistantMsgId);
 
     if (searchSources.length > 0) {
       streamingHandle.updateSources(searchSources);
