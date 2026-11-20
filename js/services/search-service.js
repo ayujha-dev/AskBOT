@@ -82,8 +82,13 @@ export class SearchService {
     const isTemporal = /\b(today|now|latest|recent|yesterday|news|2026|2025)\b/i.test(query);
     const freshnessParam = isTemporal ? '&freshness=pw' : '';
 
-    let endpoint = proxyUrl && proxyUrl.trim()
-      ? `${proxyUrl.trim().replace(/\/$/, '')}?q=${encodeURIComponent(query)}&maximum_number_of_tokens=6000&enable_source_metadata=true${freshnessParam}`
+    let effectiveProxy = proxyUrl && proxyUrl.trim() ? proxyUrl.trim() : null;
+    if (!effectiveProxy && typeof window !== 'undefined' && window.location && window.location.origin) {
+      effectiveProxy = '/api/brave-search';
+    }
+
+    let endpoint = effectiveProxy
+      ? `${effectiveProxy.replace(/\/$/, '')}?q=${encodeURIComponent(query)}&maximum_number_of_tokens=6000&enable_source_metadata=true${freshnessParam}`
       : `https://api.search.brave.com/res/v1/llm/context?q=${encodeURIComponent(query)}&maximum_number_of_tokens=6000&enable_source_metadata=true${freshnessParam}`;
 
     const headers = {
@@ -145,8 +150,15 @@ export class SearchService {
   static async searchBraveWeb(query, apiKey, proxyUrl = null) {
     if (!apiKey) return [];
     try {
-      let endpoint = proxyUrl && proxyUrl.trim()
-        ? `${proxyUrl.trim().replace(/\/brave-search$/, '/brave-web-search')}?q=${encodeURIComponent(query)}&count=5`
+      let effectiveProxy = proxyUrl && proxyUrl.trim() ? proxyUrl.trim() : null;
+      if (!effectiveProxy && typeof window !== 'undefined' && window.location && window.location.origin) {
+        effectiveProxy = '/api/brave-search';
+      }
+
+      let endpoint = effectiveProxy
+        ? (effectiveProxy.includes('/api/brave-search')
+            ? `${effectiveProxy}?type=web&q=${encodeURIComponent(query)}&count=5`
+            : `${effectiveProxy.replace(/\/brave-search$/, '/brave-web-search')}?q=${encodeURIComponent(query)}&count=5`)
         : `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`;
 
       const res = await fetch(endpoint, {

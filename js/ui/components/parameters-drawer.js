@@ -29,18 +29,10 @@ export class ParametersDrawer {
   }
 
   init() {
-    if (!this.drawerEl) return;
-
     // Open/Close drawer handlers
-    if (this.btnToggle) {
-      this.btnToggle.addEventListener('click', () => this.toggle());
-    }
-    if (this.btnClose) {
-      this.btnClose.addEventListener('click', () => this.close());
-    }
-    if (this.backdropEl) {
-      this.backdropEl.addEventListener('click', () => this.close());
-    }
+    this.btnToggle?.addEventListener('click', () => this.toggle());
+    this.btnClose?.addEventListener('click', () => this.close());
+    this.backdropEl?.addEventListener('click', () => this.close());
 
     // Escape key to close
     document.addEventListener('keydown', (e) => {

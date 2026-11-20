@@ -51,47 +51,35 @@ export class ChatNavRail {
   }
 
   init() {
-    if (!this.railEl || !this.canvasEl) return;
+    this.btnTop?.addEventListener('click', () => {
+      this.canvasEl?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 
-    if (this.btnTop) {
-      this.btnTop.addEventListener('click', () => {
-        this.canvasEl.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
-
-    if (this.btnBottom) {
-      this.btnBottom.addEventListener('click', () => {
+    this.btnBottom?.addEventListener('click', () => {
+      if (this.canvasEl) {
         this.canvasEl.scrollTo({ top: this.canvasEl.scrollHeight, behavior: 'smooth' });
-      });
-    }
+      }
+    });
 
-    if (this.contextMeter) {
-      this.contextMeter.addEventListener('click', () => {
-        this.onOpenParameters();
-      });
-    }
+    this.contextMeter?.addEventListener('click', () => {
+      this.onOpenParameters();
+    });
 
-    if (this.btnJumpCode) {
-      this.btnJumpCode.addEventListener('click', () => {
-        this.jumpToNext(this.codeTargets, 'currentCodeIdx');
-      });
-    }
+    this.btnJumpCode?.addEventListener('click', () => {
+      this.jumpToNext(this.codeTargets, 'currentCodeIdx');
+    });
 
-    if (this.btnJumpSearch) {
-      this.btnJumpSearch.addEventListener('click', () => {
-        this.jumpToNext(this.searchTargets, 'currentSearchIdx');
-      });
-    }
+    this.btnJumpSearch?.addEventListener('click', () => {
+      this.jumpToNext(this.searchTargets, 'currentSearchIdx');
+    });
 
-    if (this.btnJumpThought) {
-      this.btnJumpThought.addEventListener('click', () => {
-        this.jumpToNext(this.thoughtTargets, 'currentThoughtIdx');
-      });
-    }
+    this.btnJumpThought?.addEventListener('click', () => {
+      this.jumpToNext(this.thoughtTargets, 'currentThoughtIdx');
+    });
 
     // Scroll listener for active turn highlighting
     let isTicking = false;
-    this.canvasEl.addEventListener('scroll', () => {
+    this.canvasEl?.addEventListener('scroll', () => {
       if (!isTicking) {
         window.requestAnimationFrame(() => {
           this.highlightCurrentTurn();

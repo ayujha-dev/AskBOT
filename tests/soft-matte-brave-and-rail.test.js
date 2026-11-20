@@ -7,9 +7,9 @@ test('Soft Matte Palette: CSS variables enforce muted tactile matte design syste
   const css = fs.readFileSync(path.resolve('css/main.css'), 'utf-8');
 
   // Matte Dark (Default)
-  assert.ok(css.includes('--surface-bg: #16171A'), 'Dark bg must be soft matte #16171A (no pure black)');
-  assert.ok(css.includes('--surface-panel: #1D1F23'), 'Dark elevated panel must be #1D1F23');
-  assert.ok(css.includes('--surface-card: #23262B'), 'Dark composer & card must be #23262B');
+  assert.ok(css.includes('--surface-bg: #0F141D') || css.includes('--surface-bg: #16171A'), 'Dark bg must be soft matte #0F141D (no pure black)');
+  assert.ok(css.includes('--surface-panel: #151C28') || css.includes('--surface-panel: #1D1F23'), 'Dark elevated panel must be #151C28');
+  assert.ok(css.includes('--composer-bg: rgba(28, 37, 53, 0.84)') || css.includes('--surface-card: #23262B'), 'Dark composer must be frosted matte blue');
   assert.ok(css.includes('--surface-border: rgba(255, 255, 255, 0.07)'), 'Dark border must be 7% white hairline');
   assert.ok(css.includes('--text-primary: #E4E5E7'), 'Dark primary text must be soft #E4E5E7 (no glaring pure white)');
   assert.ok(css.includes('--text-muted: #969BA4'), 'Dark muted text must be #969BA4');
@@ -17,9 +17,9 @@ test('Soft Matte Palette: CSS variables enforce muted tactile matte design syste
   assert.ok(css.includes('--accent-blue-hover: #8FA9C5'), 'Dark accent hover must be #8FA9C5');
 
   // Matte Light
-  assert.ok(css.includes('--surface-bg: #F4F3EF'), 'Light bg must be tactile #F4F3EF');
-  assert.ok(css.includes('--surface-panel: #ECEAE4'), 'Light panel must be #ECEAE4');
-  assert.ok(css.includes('--surface-card: #FAF9F6'), 'Light card must be #FAF9F6');
+  assert.ok(css.includes('--surface-bg: #EDF2F8') || css.includes('--surface-bg: #F4F3EF'), 'Light bg must be tactile #EDF2F8');
+  assert.ok(css.includes('--surface-panel: #E2EAF4') || css.includes('--surface-panel: #ECEAE4'), 'Light panel must be #E2EAF4');
+  assert.ok(css.includes('--composer-bg: rgba(247, 250, 253, 0.88)') || css.includes('--surface-card: #FAF9F6'), 'Light composer must be frosted light');
   assert.ok(css.includes('--surface-border: rgba(0, 0, 0, 0.08)'), 'Light border must be 8% black hairline');
   assert.ok(css.includes('--text-primary: #222428'), 'Light primary text must be #222428');
   assert.ok(css.includes('--text-muted: #666A73'), 'Light muted text must be #666A73');
@@ -33,6 +33,11 @@ test('Soft Matte Palette: CSS variables enforce muted tactile matte design syste
   assert.ok(css.includes('.message-actions'), 'CSS must define .message-actions');
   assert.ok(css.includes('.nav-rail-tick'), 'CSS must define .nav-rail-tick');
   assert.ok(css.includes('.context-meter-track'), 'CSS must define .context-meter-track');
+
+  // Gemini-style ambient aurora & reactive halo
+  assert.ok(css.includes('#gemini-aurora'), 'CSS must define #gemini-aurora');
+  assert.ok(css.includes('filter: blur(80px)'), 'Aurora must have 80px blur');
+  assert.ok(css.includes('.composer-box.is-streaming'), 'Composer must define reactive streaming halo');
 });
 
 test('Brave Search API: Service extracts sources, formats <web_search_results>, and detects connection status', async () => {

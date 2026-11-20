@@ -21,10 +21,8 @@ export class MessagesComponent {
   }
 
   initGlobalListeners() {
-    if (!this.container) return;
-
     // Handle delegated copy and run-code clicks
-    this.container.addEventListener('click', async (e) => {
+    this.container?.addEventListener('click', async (e) => {
       // Copy code button inside syntax highlighted block
       const copyBtn = e.target.closest('.copy-code-btn');
       if (copyBtn) {

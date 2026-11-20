@@ -20,7 +20,7 @@ export class OnboardingModal {
       this.open();
     }
 
-    this.submitBtn.addEventListener('click', async () => {
+    this.submitBtn?.addEventListener('click', async () => {
       await this.handleValidation();
     });
 

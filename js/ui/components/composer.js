@@ -25,17 +25,15 @@ export class ComposerComponent {
   }
 
   init() {
-    if (!this.textarea || !this.btnSend) return;
-
     // Auto-expanding textarea
-    this.textarea.addEventListener('input', () => {
+    this.textarea?.addEventListener('input', () => {
       this.textarea.style.height = 'auto';
       this.textarea.style.height = Math.min(this.textarea.scrollHeight, 176) + 'px';
       this.updateSendButtonState();
     });
 
     // Handle direct paste inside composer textarea (screenshots, images, files)
-    this.textarea.addEventListener('paste', async (e) => {
+    this.textarea?.addEventListener('paste', async (e) => {
       const clipboard = e.clipboardData;
       if (!clipboard) return;
 
@@ -72,7 +70,7 @@ export class ComposerComponent {
     }
 
     // Keyboard enter-to-send
-    this.textarea.addEventListener('keydown', (e) => {
+    this.textarea?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         this.submit();
@@ -80,29 +78,25 @@ export class ComposerComponent {
     });
 
     // Send button click
-    this.btnSend.addEventListener('click', () => {
+    this.btnSend?.addEventListener('click', () => {
       this.submit();
     });
 
     // Code Interpreter toggle
-    if (this.toggleCode) {
-      this.toggleCode.addEventListener('click', () => {
-        const current = store.getState().modes.codeInterpreter;
-        store.setState({
-          modes: { ...store.getState().modes, codeInterpreter: !current }
-        });
+    this.toggleCode?.addEventListener('click', () => {
+      const current = store.getState().modes.codeInterpreter;
+      store.setState({
+        modes: { ...store.getState().modes, codeInterpreter: !current }
       });
-    }
+    });
 
     // Web Search toggle
-    if (this.toggleSearch) {
-      this.toggleSearch.addEventListener('click', () => {
-        const current = store.getState().modes.webSearch;
-        store.setState({
-          modes: { ...store.getState().modes, webSearch: !current }
-        });
+    this.toggleSearch?.addEventListener('click', () => {
+      const current = store.getState().modes.webSearch;
+      store.setState({
+        modes: { ...store.getState().modes, webSearch: !current }
       });
-    }
+    });
 
     // Thinking mode menu
     if (this.btnThinking && this.thinkingDropdown) {
@@ -112,8 +106,8 @@ export class ComposerComponent {
       });
 
       document.addEventListener('click', (e) => {
-        if (!this.btnThinking.contains(e.target) && !this.thinkingDropdown.contains(e.target)) {
-          this.thinkingDropdown.classList.add('hidden');
+        if (!this.btnThinking?.contains(e.target) && !this.thinkingDropdown?.contains(e.target)) {
+          this.thinkingDropdown?.classList.add('hidden');
         }
       });
 
@@ -130,12 +124,10 @@ export class ComposerComponent {
     }
 
     // Model selector pill inside composer toolbar
-    if (this.modelPill) {
-      this.modelPill.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.onSelectModel(this.modelPill);
-      });
-    }
+    this.modelPill?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onSelectModel(this.modelPill);
+    });
 
     // Subscribe to mode and model changes
     store.subscribe((state, changedKeys) => {

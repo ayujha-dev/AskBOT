@@ -30,13 +30,20 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
+  <!-- Favicon & Brand Icons -->
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/highlight-theme.css">
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body class="h-screen w-screen flex overflow-hidden select-none relative">
 
-  <!-- Reactbits-style Animated Background Canvas -->
+  <!-- Gemini-style Matte Blue Ambient Aurora -->
+  <div id="gemini-aurora" class="gemini-aurora pointer-events-none" aria-hidden="true"></div>
+
+  <!-- Ambient Background Canvas -->
   <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
 
   <!-- Reusable SVG Icon Sprites -->
@@ -50,14 +57,25 @@
 
   <!-- ==================== SIDEBAR ==================== -->
   <aside id="sidebar" class="w-64 md:w-72 h-full flex flex-col flex-shrink-0 border-r border-[var(--surface-border)] glass-panel transition-all duration-200 z-30 relative">
-    <!-- Sidebar Header -->
-    <div class="p-3 flex items-center justify-between border-b border-[var(--surface-border)]">
-      <button id="btn-new-chat" class="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-spring shadow-sm text-[var(--text-primary)]">
+    <!-- Brand Logo Header -->
+    <div class="px-3.5 py-3 flex items-center justify-between border-b border-[var(--surface-border)]">
+      <div class="flex items-center gap-2.5">
+        <img src="assets/logo.png" alt="AskBOT Logo" class="w-8 h-8 rounded-xl object-cover shadow-sm border border-[var(--surface-border)]">
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight text-[var(--text-primary)]">Ask<span class="text-[var(--accent-blue)]">BOT</span></span>
+          <span class="text-[10px] text-[var(--text-muted)] leading-none">Multi-Provider AI</span>
+        </div>
+      </div>
+      <button id="btn-collapse-sidebar" class="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-spring md:flex hidden" title="Collapse sidebar">
+        <svg class="w-4 h-4"><use href="#icon-chevron-down"/></svg>
+      </button>
+    </div>
+
+    <!-- New Chat Button -->
+    <div class="p-3 pb-1 flex items-center justify-between">
+      <button id="btn-new-chat" class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] border border-[var(--surface-border)] ui-spring shadow-sm text-[var(--text-primary)]">
         <svg class="w-4 h-4 text-[var(--accent-blue)]"><use href="#icon-plus"/></svg>
         <span>New chat</span>
-      </button>
-      <button id="btn-collapse-sidebar" class="ml-2 p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-spring md:flex hidden" title="Collapse sidebar">
-        <svg class="w-4 h-4"><use href="#icon-chevron-down"/></svg>
       </button>
     </div>
 
@@ -166,9 +184,12 @@
       <div id="chat-fog-panel" class="chat-fog-panel w-full max-w-[760px] my-auto p-4 sm:p-6 md:p-8 rounded-3xl min-h-full flex flex-col justify-start relative">
         <!-- Empty State: Dynamic Greeting & Suggestions -->
         <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
-          <div class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[11px] text-[var(--text-muted)]">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>AskBOT Multi-Provider AI</span>
+          <div class="mb-4 flex flex-col items-center gap-3">
+            <img src="assets/logo.png" alt="AskBOT" class="w-16 h-16 rounded-2xl object-cover shadow-lg border border-[var(--surface-border)] hover:scale-105 transition-transform duration-300">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[11px] text-[var(--text-muted)]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>AskBOT Multi-Provider AI</span>
+            </div>
           </div>
           <h1 id="greeting-heading" class="greeting-editorial text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-[var(--text-primary)] mb-3 min-h-[1.25em]">
             Good evening
@@ -387,11 +408,9 @@
   <div id="onboarding-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
     <div class="modal-card w-full max-w-md rounded-2xl p-6 relative text-[var(--text-primary)]">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-xl bg-[var(--accent-subtle)] text-[var(--accent-blue)] flex items-center justify-center font-bold text-lg">
-          A
-        </div>
+        <img src="assets/logo.png" alt="AskBOT Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md border border-[var(--surface-border)]">
         <div>
-          <h2 class="text-base font-semibold">Welcome to AskBOT</h2>
+          <h2 class="text-base font-semibold">Welcome to Ask<span class="text-[var(--accent-blue)]">BOT</span></h2>
           <p class="text-xs text-[var(--text-muted)]">Client-side Multi-Provider AI</p>
         </div>
       </div>

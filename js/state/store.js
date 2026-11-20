@@ -41,6 +41,14 @@ export class Store {
         const storedModes = localStorage.getItem(STORAGE_KEYS.MODES);
         if (storedModes) state.modes = { ...state.modes, ...JSON.parse(storedModes) };
 
+        // Safely migrate legacy localStorage values (e.g. thinkingLevel: "off" -> "low")
+        if (!state.modes.thinkingLevel || state.modes.thinkingLevel === 'off' || !['low', 'medium', 'high'].includes(state.modes.thinkingLevel)) {
+          state.modes.thinkingLevel = 'low';
+          try {
+            localStorage.setItem(STORAGE_KEYS.MODES, JSON.stringify(state.modes));
+          } catch {}
+        }
+
         const storedChats = localStorage.getItem(STORAGE_KEYS.CHATS);
         if (storedChats) state.chats = JSON.parse(storedChats);
 

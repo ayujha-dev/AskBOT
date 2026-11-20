@@ -49,49 +49,35 @@ export class SidebarComponent {
   }
 
   init() {
-    if (this.btnNewChat) {
-      this.btnNewChat.addEventListener('click', () => {
-        this.onNewChat();
-      });
-    }
+    this.btnNewChat?.addEventListener('click', () => {
+      this.onNewChat();
+    });
 
-    if (this.btnCollapse && this.sidebarEl) {
-      this.btnCollapse.addEventListener('click', () => {
-        this.toggleSidebar();
-      });
-    }
+    this.btnCollapse?.addEventListener('click', () => {
+      this.toggleSidebar();
+    });
 
-    if (this.btnToggle && this.sidebarEl) {
-      this.btnToggle.addEventListener('click', () => {
-        this.toggleSidebar();
-      });
-    }
+    this.btnToggle?.addEventListener('click', () => {
+      this.toggleSidebar();
+    });
 
-    if (this.btnSettings) {
-      this.btnSettings.addEventListener('click', () => {
-        this.onOpenSettings();
-      });
-    }
+    this.btnSettings?.addEventListener('click', () => {
+      this.onOpenSettings();
+    });
 
-    if (this.btnTheme) {
-      this.btnTheme.addEventListener('click', () => {
-        this.toggleTheme();
-      });
-    }
+    this.btnTheme?.addEventListener('click', () => {
+      this.toggleTheme();
+    });
 
-    if (this.sidebarProviderCard) {
-      this.sidebarProviderCard.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.onSelectModel(this.sidebarProviderCard);
-      });
-    }
+    this.sidebarProviderCard?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onSelectModel(this.sidebarProviderCard);
+    });
 
-    if (this.searchInput) {
-      this.searchInput.addEventListener('input', (e) => {
-        this.searchQuery = (e.target.value || '').trim().toLowerCase();
-        this.renderHistory();
-      });
-    }
+    this.searchInput?.addEventListener('input', (e) => {
+      this.searchQuery = (e.target.value || '').trim().toLowerCase();
+      this.renderHistory();
+    });
 
     store.subscribe((state, changedKeys) => {
       if (changedKeys.includes('chats') || changedKeys.includes('currentChatId')) {

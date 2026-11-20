@@ -476,6 +476,9 @@ class AppCoordinator {
       this.isStreaming = true;
       this.activeAbortController = new AbortController();
 
+      const composerBox = document.getElementById('chat-composer');
+      composerBox?.classList.add('is-streaming');
+
       try {
         const provider = ProviderRegistry.getProvider(activeProvider);
 
@@ -536,12 +539,12 @@ class AppCoordinator {
       } finally {
         this.isStreaming = false;
         this.activeAbortController = null;
+        composerBox?.classList.remove('is-streaming');
       }
     } catch (outerErr) {
       console.error('Fatal message preparation error:', outerErr);
       alert(`Error sending message: ${outerErr.message}`);
     }
-  }
   }
 }
 
