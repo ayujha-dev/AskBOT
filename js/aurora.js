@@ -1,12 +1,14 @@
 /**
- * Aurora: Volumetric Gemini-Style Atmospheric Aurora Simulation
- * Powered by WebGL2 Fractional Brownian Motion (FBM) & Simplex Noise Domain Warping
- * Features:
- * - True vertically diffused light curtains with organic shimmer and drift
- * - Passive cursor wake tracking that warps noise plasma
- * - Radial click ripple bloom with ~1.5s decay
- * - Automatic Dark/Light mode color calibration
- * - 2D procedural canvas fallback if WebGL2 is unavailable
+ * Gemini Atmospheric Aura — Interactive Ambient Background Engine
+ * Replaces Aurora with the full GeminiAuraEngine:
+ * - Full WebGL (GLSL ES 1.00) shader + automatic HTML5 2D Canvas fallback
+ * - True vertically & radially diffused atmospheric halo (Gemini Cobalt, Slate Blue, Nebula Iris, Deep Horizon)
+ * - Multi-depth parallax & critically damped spring pointer tracking
+ * - Organic breathing low-frequency noise (no harsh lines or ribbons)
+ * - Click / tap resonance ripples (up to 6 concurrent, feathered decay)
+ * - Press-and-hold "Awaken" listening focus bloom
+ * - Triangular-PDF micro-dithering to eliminate 8-bit gradient banding
+ * - Automatic Light/Dark mode atmospheric color calibration
  * - Clean lifecycle disposal with zero leaks
  */
 
@@ -16,7 +18,7 @@ export const DEFAULT_AURORA_OPTIONS = {
   opacity: 0.85,
   speed: 1.0,
   interactive: true,
-  rippleDuration: 1.4 // seconds
+  rippleDuration: 1.4
 };
 
 export const AURORA_LIGHT_OPTIONS = {
@@ -31,158 +33,849 @@ export const AURORA_DARK_OPTIONS = {
   colors: ['#2B5B9E', '#4B6CB7', '#3A7CA5', '#5C548E']
 };
 
-function parseHexColor(hex) {
-  if (typeof hex !== 'string') return [0.17, 0.36, 0.62];
-  let h = hex.replace('#', '').trim();
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  if (h.length < 6) return [0.17, 0.36, 0.62];
-  const num = parseInt(h.slice(0, 6), 16);
-  return [
-    ((num >> 16) & 255) / 255,
-    ((num >> 8) & 255) / 255,
-    (num & 255) / 255
-  ];
-}
+export class GeminiAuraEngine {
+  static MAX_RIPPLES = 6;
 
-const VS_SOURCE = `#version 300 es
-in vec2 a_position;
-void main() {
-  gl_Position = vec4(a_position, 0.0, 1.0);
-}
-`;
-
-const FS_SOURCE = `#version 300 es
-precision highp float;
-
-out vec4 fragColor;
-
-uniform vec2 u_resolution;
-uniform float u_time;
-uniform vec2 u_pointer;
-uniform float u_pointer_active;
-uniform vec4 u_ripple; // x, y, start_time, duration
-uniform vec3 u_color1;
-uniform vec3 u_color2;
-uniform vec3 u_color3;
-uniform vec3 u_color4;
-uniform float u_opacity;
-uniform float u_light_mode;
-
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
-
-float snoise(vec2 v) {
-  const vec4 C = vec4(0.211324865405187,
-                      0.366025403784439,
-                     -0.577350269189626,
-                      0.024390243902439);
-  vec2 i  = floor(v + dot(v, C.yy));
-  vec2 x0 = v -   i + dot(i, C.xx);
-  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec4 x12 = x0.xyxy + C.xxzz;
-  x12.xy -= i1;
-  i = mod289(i);
-  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-  m = m * m;
-  m = m * m;
-  vec3 x = 2.0 * fract(p * C.www) - 1.0;
-  vec3 h = abs(x) - 0.5;
-  vec3 ox = floor(x + 0.5);
-  vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-  vec3 g;
-  g.x = a0.x * x0.x + h.x * x0.y;
-  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-  return 130.0 * dot(m, g);
-}
-
-float fbm(vec2 p) {
-  float val = 0.0;
-  float amp = 0.5;
-  float freq = 1.0;
-  for (int i = 0; i < 4; i++) {
-    val += amp * (snoise(p * freq) * 0.5 + 0.5);
-    p += vec2(0.42, 0.68);
-    freq *= 2.02;
-    amp *= 0.48;
-  }
-  return val;
-}
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-  // Invert y so top of viewport is 1.0
-  vec2 p = uv;
-  p.x *= u_resolution.x / u_resolution.y;
-
-  float t = u_time * 0.14;
-
-  // Pointer wake warp
-  vec2 ptr = u_pointer;
-  ptr.x *= u_resolution.x / u_resolution.y;
-  float distPtr = length(p - ptr);
-  vec2 mouseWarp = vec2(0.0);
-  if (u_pointer_active > 0.01) {
-    float mouseStrength = exp(-distPtr * 3.0) * 0.25 * u_pointer_active;
-    mouseWarp = normalize(p - ptr + 0.0001) * mouseStrength;
+  static hexToNormRgb(hex) {
+    const clean = (hex || '').replace('#', '').trim();
+    if (clean.length === 3) {
+      const r = parseInt(clean[0] + clean[0], 16) / 255;
+      const g = parseInt(clean[1] + clean[1], 16) / 255;
+      const b = parseInt(clean[2] + clean[2], 16) / 255;
+      return [r, g, b];
+    }
+    const n = parseInt(clean || '000000', 16);
+    return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
   }
 
-  // Click ripple interaction
-  float rippleDist = length(uv - u_ripple.xy);
-  float rippleAge = u_time - u_ripple.z;
-  float rippleWave = 0.0;
-  if (rippleAge >= 0.0 && rippleAge < u_ripple.w) {
-    float normAge = rippleAge / u_ripple.w;
-    float ringRadius = normAge * 0.9;
-    float ringDelta = abs(rippleDist - ringRadius);
-    float ringFalloff = exp(-ringDelta * 16.0) * (1.0 - normAge);
-    rippleWave = ringFalloff * 0.38;
+  static PRESETS = {
+    // Default: Exact Gemini dark-mode obsidian + wide diffused sapphire/cobalt/indigo halo
+    geminiCobalt: {
+      name: 'Gemini Cobalt',
+      baseHex: '#0b0d12',
+      baseOuter: GeminiAuraEngine.hexToNormRgb('#0b0d12'),
+      baseInner: GeminiAuraEngine.hexToNormRgb('#0f121b'),
+      lobe1: GeminiAuraEngine.hexToNormRgb('#132252'),
+      lobe2: GeminiAuraEngine.hexToNormRgb('#1c3478'),
+      lobe3: GeminiAuraEngine.hexToNormRgb('#284696'),
+      lobe4: GeminiAuraEngine.hexToNormRgb('#23346e'),
+    },
+    // Softer desaturated matte steel / slate-cobalt
+    matteSlateBlue: {
+      name: 'Matte Slate Blue',
+      baseHex: '#0b0e14',
+      baseOuter: GeminiAuraEngine.hexToNormRgb('#0b0e14'),
+      baseInner: GeminiAuraEngine.hexToNormRgb('#101520'),
+      lobe1: GeminiAuraEngine.hexToNormRgb('#162742'),
+      lobe2: GeminiAuraEngine.hexToNormRgb('#233a5e'),
+      lobe3: GeminiAuraEngine.hexToNormRgb('#35517a'),
+      lobe4: GeminiAuraEngine.hexToNormRgb('#273e5c'),
+    },
+    // Cobalt with muted deep indigo-violet undertone
+    nebulaIris: {
+      name: 'Nebula Iris',
+      baseHex: '#0c0b14',
+      baseOuter: GeminiAuraEngine.hexToNormRgb('#0c0b14'),
+      baseInner: GeminiAuraEngine.hexToNormRgb('#121020'),
+      lobe1: GeminiAuraEngine.hexToNormRgb('#191f54'),
+      lobe2: GeminiAuraEngine.hexToNormRgb('#2a2c7a'),
+      lobe3: GeminiAuraEngine.hexToNormRgb('#413994'),
+      lobe4: GeminiAuraEngine.hexToNormRgb('#233d78'),
+    },
+    // Midnight navy with understated soft teal-blue mist
+    deepHorizon: {
+      name: 'Deep Horizon',
+      baseHex: '#090e13',
+      baseOuter: GeminiAuraEngine.hexToNormRgb('#090e13'),
+      baseInner: GeminiAuraEngine.hexToNormRgb('#0d161f'),
+      lobe1: GeminiAuraEngine.hexToNormRgb('#0f273c'),
+      lobe2: GeminiAuraEngine.hexToNormRgb('#173d59'),
+      lobe3: GeminiAuraEngine.hexToNormRgb('#225473'),
+      lobe4: GeminiAuraEngine.hexToNormRgb('#1a3554'),
+    },
+    // Light Mode Serene Pastel Wash
+    lightPastel: {
+      name: 'Light Pastel',
+      baseHex: '#f3f5f9',
+      baseOuter: GeminiAuraEngine.hexToNormRgb('#f3f5f9'),
+      baseInner: GeminiAuraEngine.hexToNormRgb('#e8edf5'),
+      lobe1: GeminiAuraEngine.hexToNormRgb('#b0c8ea'),
+      lobe2: GeminiAuraEngine.hexToNormRgb('#9bc0e7'),
+      lobe3: GeminiAuraEngine.hexToNormRgb('#a8b8e8'),
+      lobe4: GeminiAuraEngine.hexToNormRgb('#9ad3eb'),
+    }
+  };
+
+  static DEFAULT_TUNING = {
+    glowIntensity: 1.0,
+    breathSpeed: 1.0,
+    pointerPull: 1.0,
+    matteGrain: 0.7,
+  };
+
+  constructor(canvas, options = {}) {
+    this.canvas = canvas;
+    this.isLightMode = Boolean(options.lightMode);
+    this.presetKey = options.preset && GeminiAuraEngine.PRESETS[options.preset]
+      ? options.preset
+      : (this.isLightMode ? 'lightPastel' : 'geminiCobalt');
+
+    const initialPal = GeminiAuraEngine.PRESETS[this.presetKey] || GeminiAuraEngine.PRESETS.geminiCobalt;
+
+    this.colors = {
+      baseOuter: [...initialPal.baseOuter],
+      baseInner: [...initialPal.baseInner],
+      lobe1: [...initialPal.lobe1],
+      lobe2: [...initialPal.lobe2],
+      lobe3: [...initialPal.lobe3],
+      lobe4: [...initialPal.lobe4],
+    };
+
+    this.targetTuning = { ...GeminiAuraEngine.DEFAULT_TUNING, ...(options.tuning || {}) };
+    this.tuning = { ...this.targetTuning };
+
+    this.elapsed = 0;
+    this.breathTime = 8.4;
+    this.lastMs = 0;
+    this.rafId = null;
+
+    this.pointerTarget = { x: 0.5, y: 0.5 };
+    this.pointer = { x: 0.5, y: 0.5 };
+    this.pointerSpringVel = { x: 0, y: 0 };
+
+    this.trail = { x: 0.5, y: 0.5 };
+    this.visualVel = { x: 0, y: 0 };
+
+    this.pointerPresenceTarget = 0.0;
+    this.pointerPresence = 0.0;
+    this.isHolding = false;
+    this.holdStartTime = 0;
+    this.holdStrength = 0.0;
+
+    this.focusBoostTarget = 0.0;
+    this.focusBoost = 0.0;
+    this.typingPulse = 0.0;
+
+    this.ripples = Array.from({ length: GeminiAuraEngine.MAX_RIPPLES }, () => ({
+      x: 0.5,
+      y: 0.5,
+      startTime: -100.0,
+      strength: 0.0,
+    }));
+    this.nextRippleIndex = 0;
+    this.rippleBuffer = new Float32Array(GeminiAuraEngine.MAX_RIPPLES * 4);
+
+    this.rendererMode = 'webgl';
+    this.gl = null;
+    this.program = null;
+    this.uniforms = {};
+    this.ctx2d = null;
+    this.grainTile2d = null;
+
+    this._onResize = this.resize.bind(this);
+    this._animate = this._tick.bind(this);
+
+    this.resize();
+    if (!this._initWebGL()) {
+      this._init2DFallback();
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', this._onResize, { passive: true });
+    }
   }
 
-  // Domain warping for organic northern lights curtains
-  vec2 q = vec2(fbm(p + vec2(0.0, t * 0.35) + mouseWarp),
-                fbm(p + vec2(1.7, -t * 0.28) - mouseWarp));
-
-  vec2 r = vec2(fbm(p + 1.4 * q + vec2(1.2, 0.6) + vec2(t * 0.25, t * 0.18)),
-                fbm(p + 1.2 * q + vec2(2.8, 1.4) - vec2(t * 0.20, t * 0.30)));
-
-  float f = fbm(p + 1.5 * r + mouseWarp * 0.6);
-
-  // Soft vertical diffusion curtain
-  float verticalFade = smoothstep(1.15, 0.05, uv.y);
-  float sideGlow = 0.65 + 0.35 * (pow(abs(uv.x - 0.5) * 2.0, 1.3));
-  float curtain = pow(f, 1.5) * verticalFade * sideGlow;
-  curtain += rippleWave;
-
-  // 4-stop Gemini Palette blending
-  vec3 col = mix(u_color1, u_color2, clamp(f * 1.5, 0.0, 1.0));
-  col = mix(col, u_color3, clamp(length(q), 0.0, 1.0));
-  col = mix(col, u_color4, clamp(r.x * 1.3, 0.0, 1.0));
-
-  // Soft pointer halo
-  if (u_pointer_active > 0.01) {
-    float cursorGlow = exp(-distPtr * 3.8) * 0.3 * u_pointer_active;
-    col += u_color2 * cursorGlow;
+  start() {
+    if (this.rafId !== null) return;
+    this.lastMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    this.rafId = requestAnimationFrame(this._animate);
   }
 
-  float alpha;
-  if (u_light_mode > 0.5) {
-    alpha = clamp(curtain * u_opacity * 0.75, 0.0, 0.6);
-    col = mix(col, vec3(0.96, 0.98, 1.0), 0.12);
-  } else {
-    alpha = clamp(curtain * u_opacity * 1.15, 0.0, 0.92);
+  stop() {
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
   }
 
-  fragColor = vec4(col, alpha);
+  destroy() {
+    this.stop();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this._onResize);
+    }
+    if (this.gl && this.program) {
+      try {
+        const gl = this.gl;
+        gl.useProgram(null);
+        if (this.vbo) gl.deleteBuffer(this.vbo);
+        gl.deleteProgram(this.program);
+      } catch (_) {}
+    }
+  }
+
+  getRendererMode() {
+    return this.rendererMode;
+  }
+
+  setLightMode(isLight) {
+    this.isLightMode = Boolean(isLight);
+    this.setPreset(this.isLightMode ? 'lightPastel' : 'geminiCobalt');
+  }
+
+  setPreset(key) {
+    if (!GeminiAuraEngine.PRESETS[key]) return;
+    this.presetKey = key;
+  }
+
+  setTuning(partial) {
+    Object.assign(this.targetTuning, partial);
+  }
+
+  resetTuning() {
+    this.targetTuning = { ...GeminiAuraEngine.DEFAULT_TUNING };
+  }
+
+  setFocusBoost(active, level = 0.28) {
+    this.focusBoostTarget = active ? level : 0.0;
+  }
+
+  nudgeTypingPulse(amount = 0.14) {
+    this.typingPulse = Math.min(0.32, this.typingPulse + amount);
+  }
+
+  updatePointer(normX, normY) {
+    this.pointerTarget.x = Math.min(1, Math.max(0, normX));
+    this.pointerTarget.y = Math.min(1, Math.max(0, normY));
+    this.pointerPresenceTarget = 1.0;
+  }
+
+  setPointerPresent(present) {
+    this.pointerPresenceTarget = present ? 1.0 : 0.0;
+    if (!present) this.isHolding = false;
+  }
+
+  beginHold(normX, normY, isTouch = false) {
+    this.updatePointer(normX, normY);
+    if (isTouch) {
+      this.pointer.x += (normX - this.pointer.x) * 0.6;
+      this.pointer.y += (normY - this.pointer.y) * 0.6;
+      this.pointerSpringVel.x = 0;
+      this.pointerSpringVel.y = 0;
+    }
+    this.isHolding = true;
+    this.holdStartTime = this.elapsed;
+    this.triggerRipple(normX, normY, 0.95);
+  }
+
+  endHold(normX, normY) {
+    if (!this.isHolding) return;
+    const heldSec = this.elapsed - this.holdStartTime;
+    this.isHolding = false;
+    if (heldSec > 0.18) {
+      const rx = typeof normX === 'number' ? normX : this.pointer.x;
+      const ry = typeof normY === 'number' ? normY : this.pointer.y;
+      const strength = Math.min(1.35, 0.72 + heldSec * 0.48);
+      this.triggerRipple(rx, ry, strength);
+    }
+  }
+
+  triggerRipple(normX, normY, strength = 1.0) {
+    const slot = this.ripples[this.nextRippleIndex];
+    slot.x = Math.min(1, Math.max(0, normX));
+    slot.y = Math.min(1, Math.max(0, normY));
+    slot.startTime = this.elapsed;
+    slot.strength = strength;
+    this.nextRippleIndex = (this.nextRippleIndex + 1) % GeminiAuraEngine.MAX_RIPPLES;
+  }
+
+  resize() {
+    if (!this.canvas) return;
+    const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+    const w = Math.max(1, Math.floor((typeof window !== 'undefined' ? window.innerWidth : 800) * dpr));
+    const h = Math.max(1, Math.floor((typeof window !== 'undefined' ? window.innerHeight : 600) * dpr));
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
+    }
+  }
+
+  _initWebGL() {
+    if (!this.canvas || typeof this.canvas.getContext !== 'function') return false;
+
+    const VS_SOURCE = `
+      attribute vec2 aPosition;
+      void main() {
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    `;
+
+    const FS_SOURCE = `
+      #ifdef GL_FRAGMENT_PRECISION_HIGH
+        precision highp float;
+      #else
+        precision mediump float;
+      #endif
+
+      uniform vec2 uResolution;
+      uniform float uTime;
+      uniform float uBreathTime;
+
+      uniform vec3 uBaseOuter;
+      uniform vec3 uBaseInner;
+      uniform vec3 uLobe1;
+      uniform vec3 uLobe2;
+      uniform vec3 uLobe3;
+      uniform vec3 uLobe4;
+
+      uniform vec2 uPointer;
+      uniform vec2 uTrail;
+      uniform vec2 uPointerVel;
+      uniform float uPointerActive;
+      uniform float uHold;
+      uniform float uFocusBoost;
+      uniform float uLightMode;
+
+      uniform vec4 uRipples[6];
+
+      uniform float uGlowIntensity;
+      uniform float uPointerPull;
+      uniform float uGrain;
+
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(
+          0.211324865405187,
+          0.366025403784439,
+          -0.577350269189626,
+          0.024390243902439
+        );
+        vec2 i = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+        m = m * m;
+        m = m * m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+        vec3 g;
+        g.x = a0.x * x0.x + h.x * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+
+      float triangularDither(vec2 fragCoord, float t) {
+        float frameOffset = fract(t * 11.17);
+        vec2 p1 = fragCoord + vec2(frameOffset * 173.0, frameOffset * 311.0);
+        vec2 p2 = p1 + vec2(37.2, 71.8);
+        float n1 = fract(52.9829189 * fract(dot(p1, vec2(0.06711056, 0.00583715))));
+        float n2 = fract(52.9829189 * fract(dot(p2, vec2(0.06711056, 0.00583715))));
+        return (n1 + n2 - 1.0);
+      }
+
+      float ellipseField(vec2 coord, vec2 center, vec2 radii) {
+        vec2 d = (coord - center) / radii;
+        return exp(-dot(d, d));
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / uResolution.xy;
+        float aspect = uResolution.x / max(1.0, uResolution.y);
+        float minDim = min(uResolution.x, uResolution.y);
+
+        vec2 pIso = (gl_FragCoord.xy - 0.5 * uResolution.xy) / minDim;
+        vec2 mouseIso = (uPointer * uResolution - 0.5 * uResolution) / minDim;
+        vec2 trailIso = (uTrail * uResolution - 0.5 * uResolution) / minDim;
+
+        vec2 auraScale = vec2(
+          mix(1.08, 0.92, smoothstep(0.6, 1.85, aspect)),
+          mix(0.88, 1.24, smoothstep(0.6, 1.85, aspect))
+        );
+        vec2 haloOrigin = vec2(0.5, 0.455);
+        vec2 h = (uv - haloOrigin) * auraScale;
+        vec2 ptrDelta = (uPointer - haloOrigin) * auraScale;
+
+        // 1. Click / Tap resonance ripples
+        float rippleGlow = 0.0;
+        float rippleCore = 0.0;
+        vec2 rippleRefract = vec2(0.0);
+
+        for (int i = 0; i < 6; i++) {
+          vec4 rip = uRipples[i];
+          float age = uTime - rip.z;
+          if (age > 0.0 && age < 2.48) {
+            float t = age / 2.42;
+            vec2 ripIso = (rip.xy * uResolution - 0.5 * uResolution) / minDim;
+            vec2 toRip = pIso - ripIso;
+            float dist = length(toRip);
+
+            float radius = 0.015 + pow(t, 0.70) * 0.92;
+            float ringWidth = mix(0.065, 0.19, t);
+            float ring = exp(-pow((dist - radius) / ringWidth, 2.0));
+            float env = smoothstep(0.0, 0.08, t) * pow(max(0.0, 1.0 - t), 1.9) * rip.w;
+
+            vec2 rDir = toRip / (dist + 0.0006);
+            float gentleWave = sin((dist - radius) * 14.0 - age * 2.6) * ring;
+            rippleRefract += rDir * gentleWave * env * 0.032;
+
+            rippleGlow += ring * env;
+            rippleCore += exp(-dist * dist * 10.5) * exp(-age * 2.9) * rip.w;
+          }
+        }
+
+        vec2 hRefract = h + rippleRefract;
+
+        // 2. Organic breathing noise
+        float bt = uBreathTime * 0.16;
+        float nA = snoise(hRefract * 0.72 + vec2(bt * 0.45, -bt * 0.25));
+        float nB = snoise(hRefract * 0.58 + vec2(-bt * 0.32, bt * 0.38) + vec2(4.7, 2.1));
+        vec2 softWarp = vec2(nA, nB) * 0.048;
+        vec2 hSoft = hRefract + softWarp;
+
+        // 3. Multi-depth parallax & gather bias
+        float pull = uPointerPull * uPointerActive;
+        float hold = uHold;
+        vec2 gatherBias = ptrDelta * (hold * 0.24 * max(uPointerPull, 0.45));
+
+        float b1 = 1.0 + 0.045 * sin(bt * 1.15);
+        float b2 = 1.0 + 0.055 * cos(bt * 0.92 + 1.1);
+        float b3 = 1.0 + 0.050 * sin(bt * 0.78 + 2.4);
+        float b4 = 1.0 + 0.060 * cos(bt * 0.65 + 3.7);
+
+        vec2 c1 = vec2(0.015 * sin(bt * 0.7), -0.015 + 0.012 * cos(bt * 0.6))
+                + ptrDelta * (0.065 * pull) + gatherBias * 0.65;
+        float f1 = ellipseField(hSoft, c1, vec2(0.46, 0.35) * b1);
+
+        vec2 c2 = vec2(0.055 + 0.035 * cos(bt * 0.55), -0.02 + 0.025 * sin(bt * 0.62))
+                + ptrDelta * (0.115 * pull) + gatherBias * 0.85;
+        float f2 = ellipseField(hSoft, c2, vec2(0.37, 0.27) * b2);
+
+        vec2 c3 = vec2(-0.06 + 0.04 * sin(bt * 0.48 + 1.5), 0.018 + 0.028 * cos(bt * 0.52))
+                + ptrDelta * (0.175 * pull) + gatherBias * 1.05;
+        float f3 = ellipseField(hSoft, c3, vec2(0.32, 0.24) * b3);
+
+        vec2 c4 = vec2(0.02 * cos(bt * 0.42 + 2.8), -0.045 + 0.025 * sin(bt * 0.46))
+                + ptrDelta * (0.22 * pull) + gatherBias * 1.15;
+        float f4 = ellipseField(hSoft, c4, vec2(0.42, 0.29) * b4);
+
+        float organicMod = 0.94 + 0.09 * (0.5 + 0.5 * nA);
+        float coreElevation = 1.0 + uFocusBoost * 0.36;
+
+        // 4. Base & Halo compositing
+        float outerVignette = ellipseField(h, vec2(0.0, 0.0), vec2(0.66, 0.56));
+        vec3 col = mix(uBaseOuter, uBaseInner, smoothstep(0.0, 0.85, outerVignette));
+        float glowScale = uGlowIntensity * organicMod * coreElevation;
+
+        vec3 haloAccum = vec3(0.0);
+        haloAccum += uLobe1 * (f1 * 0.95);
+        haloAccum += uLobe2 * (f2 * 0.68);
+        haloAccum += uLobe3 * (f3 * 0.44);
+        haloAccum += uLobe4 * (f4 * 0.36 * (0.85 + 0.15 * nB));
+
+        if (uLightMode > 0.5) {
+          // In light mode, soft serene atmospheric wash
+          col = mix(col, haloAccum, clamp(glowScale * 0.45 * (f1 + f2 * 0.8), 0.0, 0.48));
+        } else {
+          // In dark mode, deep screen-like matte blend on obsidian
+          col += haloAccum * glowScale * (1.0 - col * 0.45);
+        }
+
+        // 5. Pointer Luminescence, Wake & Awaken Hold Bloom
+        vec2 toMouse = pIso - mouseIso;
+        float dMouse = length(toMouse);
+        float dTrail = length(pIso - trailIso);
+
+        float cursorMist = exp(-dMouse * dMouse * 4.4) * pull;
+        vec3 cursorColor = mix(uLobe2, uLobe3, 0.55);
+        col += cursorColor * cursorMist * (uLightMode > 0.5 ? 0.14 : 0.24) * (1.0 - col * 0.4);
+
+        float speedMag = min(1.0, length(uPointerVel) * 1.45);
+        float wakeMist = exp(-dTrail * dTrail * 3.1) * pull * speedMag;
+        col += mix(uLobe3, uLobe4, 0.4) * wakeMist * (uLightMode > 0.5 ? 0.12 : 0.22) * (1.0 - col * 0.45);
+
+        float listenPulse = 0.90 + 0.10 * sin(uTime * 2.5);
+        float holdOuter = exp(-dMouse * dMouse * 3.0) * hold * listenPulse;
+        float holdInner = exp(-dMouse * dMouse * 8.2) * hold * listenPulse;
+        vec3 awakenTint = mix(uLobe2, uLobe3, 0.65) * 1.18 + vec3(0.03, 0.05, 0.10);
+        col += awakenTint * (holdOuter * 0.34 + holdInner * 0.20) * (1.0 - col * 0.48);
+
+        vec3 rippleTint = mix(uLobe3, vec3(0.45, 0.62, 0.98), 0.22);
+        col += rippleTint * rippleGlow * (uLightMode > 0.5 ? 0.18 : 0.28) * (1.0 - col * 0.42);
+        col += mix(uLobe2, uLobe3, 0.65) * rippleCore * (uLightMode > 0.5 ? 0.15 : 0.22) * (1.0 - col * 0.45);
+
+        // 6. Tone Compression & Micro-dithering
+        if (uLightMode <= 0.5) {
+          col = col / (1.0 + col * 0.42);
+          float cornerMask = smoothstep(0.98, 0.14, length((uv - vec2(0.5, 0.47)) * vec2(1.08, 1.18)));
+          col = mix(uBaseOuter, col, 0.38 + 0.62 * cornerMask);
+          float topFade = smoothstep(1.04, 0.62, uv.y);
+          col = mix(uBaseOuter, col, 0.55 + 0.45 * topFade);
+        }
+
+        float dither = triangularDither(gl_FragCoord.xy, uTime);
+        float grainAmp = 0.0055 + 0.0155 * uGrain;
+        col += dither * grainAmp;
+
+        gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+      }
+    `;
+
+    try {
+      const opts = {
+        alpha: false,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        powerPreference: 'high-performance',
+        preserveDrawingBuffer: false,
+      };
+      const gl = this.canvas.getContext('webgl', opts) || this.canvas.getContext('experimental-webgl', opts);
+      if (!gl) return false;
+
+      const vs = this._compileShader(gl, gl.VERTEX_SHADER, VS_SOURCE);
+      const fs = this._compileShader(gl, gl.FRAGMENT_SHADER, FS_SOURCE);
+      if (!vs || !fs) return false;
+
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.warn('GeminiAuraEngine link error:', gl.getProgramInfoLog(prog));
+        return false;
+      }
+
+      gl.useProgram(prog);
+
+      const vbo = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+
+      const aPos = gl.getAttribLocation(prog, 'aPosition');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      this.gl = gl;
+      this.program = prog;
+      this.vbo = vbo;
+      this.uniforms = {
+        uResolution: gl.getUniformLocation(prog, 'uResolution'),
+        uTime: gl.getUniformLocation(prog, 'uTime'),
+        uBreathTime: gl.getUniformLocation(prog, 'uBreathTime'),
+        uBaseOuter: gl.getUniformLocation(prog, 'uBaseOuter'),
+        uBaseInner: gl.getUniformLocation(prog, 'uBaseInner'),
+        uLobe1: gl.getUniformLocation(prog, 'uLobe1'),
+        uLobe2: gl.getUniformLocation(prog, 'uLobe2'),
+        uLobe3: gl.getUniformLocation(prog, 'uLobe3'),
+        uLobe4: gl.getUniformLocation(prog, 'uLobe4'),
+        uPointer: gl.getUniformLocation(prog, 'uPointer'),
+        uTrail: gl.getUniformLocation(prog, 'uTrail'),
+        uPointerVel: gl.getUniformLocation(prog, 'uPointerVel'),
+        uPointerActive: gl.getUniformLocation(prog, 'uPointerActive'),
+        uHold: gl.getUniformLocation(prog, 'uHold'),
+        uFocusBoost: gl.getUniformLocation(prog, 'uFocusBoost'),
+        uLightMode: gl.getUniformLocation(prog, 'uLightMode'),
+        uRipples: gl.getUniformLocation(prog, 'uRipples'),
+        uGlowIntensity: gl.getUniformLocation(prog, 'uGlowIntensity'),
+        uPointerPull: gl.getUniformLocation(prog, 'uPointerPull'),
+        uGrain: gl.getUniformLocation(prog, 'uGrain'),
+      };
+
+      this.rendererMode = 'webgl';
+      return true;
+    } catch (err) {
+      console.warn('GeminiAuraEngine WebGL fallback triggered:', err);
+      return false;
+    }
+  }
+
+  _compileShader(gl, type, src) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, src);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.warn('GeminiAuraEngine shader warning:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  _init2DFallback() {
+    this.rendererMode = '2d';
+    if (!this.canvas || typeof this.canvas.getContext !== 'function') return;
+    this.ctx2d = this.canvas.getContext('2d');
+
+    if (typeof document !== 'undefined') {
+      const tile = document.createElement('canvas');
+      tile.width = 96;
+      tile.height = 96;
+      const tctx = tile.getContext('2d');
+      if (tctx) {
+        const img = tctx.createImageData(96, 96);
+        for (let i = 0; i < img.data.length; i += 4) {
+          const v = Math.floor(Math.random() * 255);
+          img.data[i] = v;
+          img.data[i + 1] = v;
+          img.data[i + 2] = v;
+          img.data[i + 3] = 14;
+        }
+        tctx.putImageData(img, 0, 0);
+        if (this.ctx2d) {
+          this.grainTile2d = this.ctx2d.createPattern(tile, 'repeat');
+        }
+      }
+    }
+  }
+
+  _rgbCss(vec, alpha) {
+    const r = Math.round(Math.min(1, Math.max(0, vec[0])) * 255);
+    const g = Math.round(Math.min(1, Math.max(0, vec[1])) * 255);
+    const b = Math.round(Math.min(1, Math.max(0, vec[2])) * 255);
+    return alpha === undefined ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${alpha.toFixed(3)})`;
+  }
+
+  _render2D() {
+    if (!this.ctx2d) return;
+    const ctx = this.ctx2d;
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+    const c = this.colors;
+    const bt = this.breathTime * 0.18;
+    const glow = this.tuning.glowIntensity * (1 + (this.focusBoost + this.typingPulse) * 0.35);
+    const pull = this.tuning.pointerPull * this.pointerPresence;
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = this._rgbCss(c.baseOuter);
+    ctx.fillRect(0, 0, w, h);
+
+    const cx = w * 0.5;
+    const cy = h * 0.545;
+    const px = this.pointer.x * w;
+    const py = (1 - this.pointer.y) * h;
+    const dx = px - cx;
+    const dy = py - cy;
+
+    const drawEllipseLobe = (x, y, rx, ry, colorVec, alpha) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, ry / rx);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      g.addColorStop(0, this._rgbCss(colorVec, Math.min(0.85, alpha)));
+      g.addColorStop(0.5, this._rgbCss(colorVec, Math.min(0.45, alpha * 0.42)));
+      g.addColorStop(1, this._rgbCss(colorVec, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, rx, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    ctx.globalCompositeOperation = this.isLightMode ? 'source-over' : 'screen';
+
+    const gather = this.holdStrength * 0.22;
+    drawEllipseLobe(
+      cx + dx * (0.06 * pull + gather * 0.6),
+      cy + dy * (0.06 * pull + gather * 0.6),
+      w * (0.48 + 0.02 * Math.sin(bt)),
+      h * (0.38 + 0.02 * Math.cos(bt)),
+      c.lobe1,
+      0.78 * glow
+    );
+    drawEllipseLobe(
+      cx + w * 0.04 * Math.cos(bt * 0.7) + dx * (0.12 * pull + gather * 0.8),
+      cy + h * 0.02 * Math.sin(bt * 0.8) + dy * (0.12 * pull + gather * 0.8),
+      w * 0.39,
+      h * 0.30,
+      c.lobe2,
+      0.54 * glow
+    );
+    drawEllipseLobe(
+      cx - w * 0.05 * Math.sin(bt * 0.6) + dx * (0.17 * pull + gather),
+      cy - h * 0.02 + dy * (0.17 * pull + gather),
+      w * 0.34,
+      h * 0.26,
+      c.lobe3,
+      0.36 * glow
+    );
+    drawEllipseLobe(
+      cx + dx * (0.21 * pull + gather),
+      cy + h * 0.03 + dy * (0.21 * pull + gather),
+      w * 0.40,
+      h * 0.28,
+      c.lobe4,
+      0.28 * glow
+    );
+
+    const minDim = Math.min(w, h);
+    if (pull > 0.01 || this.holdStrength > 0.01) {
+      const rad = minDim * (0.28 + this.holdStrength * 0.14);
+      const alpha = 0.16 * pull + 0.32 * this.holdStrength;
+      drawEllipseLobe(px, py, rad, rad, c.lobe3, alpha);
+    }
+
+    for (let i = 0; i < GeminiAuraEngine.MAX_RIPPLES; i++) {
+      const r = this.ripples[i];
+      const age = this.elapsed - r.startTime;
+      if (age > 0 && age < 2.42) {
+        const t = age / 2.42;
+        const rx = r.x * w;
+        const ry = (1 - r.y) * h;
+        const radius = (0.015 + Math.pow(t, 0.7) * 0.88) * minDim;
+        const alpha = Math.pow(1 - t, 1.9) * 0.28 * r.strength;
+        ctx.beginPath();
+        ctx.arc(rx, ry, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = this._rgbCss(c.lobe3, alpha);
+        ctx.lineWidth = Math.max(3, minDim * (0.035 + 0.04 * t));
+        ctx.stroke();
+      }
+    }
+
+    if (this.grainTile2d && this.tuning.matteGrain > 0.02) {
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = Math.min(1, this.tuning.matteGrain * 0.5);
+      ctx.fillStyle = this.grainTile2d;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  _lerpVec3(cur, target, alpha) {
+    cur[0] += (target[0] - cur[0]) * alpha;
+    cur[1] += (target[1] - cur[1]) * alpha;
+    cur[2] += (target[2] - cur[2]) * alpha;
+  }
+
+  _stepCriticallyDamped(pos, vel, target, omega, dt) {
+    const f = 1 + omega * dt;
+    const expTerm = Math.exp(-omega * dt);
+    const disp = pos - target;
+    const newPos = target + (disp * f + vel * dt) * expTerm;
+    const newVel = (vel - disp * (omega * omega * dt)) * expTerm;
+    return [newPos, newVel];
+  }
+
+  _tick(nowMs) {
+    this.rafId = requestAnimationFrame(this._animate);
+
+    const dt = Math.min(0.05, Math.max(0.001, (nowMs - this.lastMs) / 1000));
+    this.lastMs = nowMs;
+    this.elapsed += dt;
+
+    const tuneEase = 1 - Math.exp(-dt * 8.5);
+    this.tuning.glowIntensity += (this.targetTuning.glowIntensity - this.tuning.glowIntensity) * tuneEase;
+    this.tuning.breathSpeed += (this.targetTuning.breathSpeed - this.tuning.breathSpeed) * tuneEase;
+    this.tuning.pointerPull += (this.targetTuning.pointerPull - this.tuning.pointerPull) * tuneEase;
+    this.tuning.matteGrain += (this.targetTuning.matteGrain - this.tuning.matteGrain) * tuneEase;
+
+    this.breathTime += dt * this.tuning.breathSpeed;
+
+    const targetPal = GeminiAuraEngine.PRESETS[this.presetKey] || GeminiAuraEngine.PRESETS.geminiCobalt;
+    const palEase = 1 - Math.exp(-dt * 2.85);
+    this._lerpVec3(this.colors.baseOuter, targetPal.baseOuter, palEase);
+    this._lerpVec3(this.colors.baseInner, targetPal.baseInner, palEase);
+    this._lerpVec3(this.colors.lobe1, targetPal.lobe1, palEase);
+    this._lerpVec3(this.colors.lobe2, targetPal.lobe2, palEase);
+    this._lerpVec3(this.colors.lobe3, targetPal.lobe3, palEase);
+    this._lerpVec3(this.colors.lobe4, targetPal.lobe4, palEase);
+
+    const prevX = this.pointer.x;
+    const prevY = this.pointer.y;
+    const [nx, nvx] = this._stepCriticallyDamped(this.pointer.x, this.pointerSpringVel.x, this.pointerTarget.x, 7.2, dt);
+    const [ny, nvy] = this._stepCriticallyDamped(this.pointer.y, this.pointerSpringVel.y, this.pointerTarget.y, 7.2, dt);
+    this.pointer.x = nx;
+    this.pointer.y = ny;
+    this.pointerSpringVel.x = nvx;
+    this.pointerSpringVel.y = nvy;
+
+    const trailEase = 1 - Math.exp(-dt * 2.9);
+    this.trail.x += (this.pointer.x - this.trail.x) * trailEase;
+    this.trail.y += (this.pointer.y - this.trail.y) * trailEase;
+
+    const instVx = (this.pointer.x - prevX) / dt;
+    const instVy = (this.pointer.y - prevY) / dt;
+    const velEase = 1 - Math.exp(-dt * 5.8);
+    this.visualVel.x += (Math.max(-1.2, Math.min(1.2, instVx * 0.35)) - this.visualVel.x) * velEase;
+    this.visualVel.y += (Math.max(-1.2, Math.min(1.2, instVy * 0.35)) - this.visualVel.y) * velEase;
+
+    this.pointerPresence += (this.pointerPresenceTarget - this.pointerPresence) * (1 - Math.exp(-dt * 3.4));
+    const holdTarget = this.isHolding ? 1.0 : 0.0;
+    this.holdStrength += (holdTarget - this.holdStrength) * (1 - Math.exp(-dt * (this.isHolding ? 2.6 : 4.0)));
+    this.focusBoost += (this.focusBoostTarget - this.focusBoost) * (1 - Math.exp(-dt * 3.2));
+    this.typingPulse *= Math.exp(-dt * 3.0);
+
+    if (this.rendererMode === 'webgl') {
+      this._renderWebGL();
+    } else {
+      this._render2D();
+    }
+  }
+
+  _renderWebGL() {
+    if (!this.gl || !this.program) return;
+    const gl = this.gl;
+    const u = this.uniforms;
+    const c = this.colors;
+
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
+    gl.uniform2f(u.uResolution, this.canvas.width, this.canvas.height);
+    gl.uniform1f(u.uTime, this.elapsed);
+    gl.uniform1f(u.uBreathTime, this.breathTime);
+
+    gl.uniform3fv(u.uBaseOuter, c.baseOuter);
+    gl.uniform3fv(u.uBaseInner, c.baseInner);
+    gl.uniform3fv(u.uLobe1, c.lobe1);
+    gl.uniform3fv(u.uLobe2, c.lobe2);
+    gl.uniform3fv(u.uLobe3, c.lobe3);
+    gl.uniform3fv(u.uLobe4, c.lobe4);
+
+    gl.uniform2f(u.uPointer, this.pointer.x, this.pointer.y);
+    gl.uniform2f(u.uTrail, this.trail.x, this.trail.y);
+    gl.uniform2f(u.uPointerVel, this.visualVel.x, this.visualVel.y);
+    gl.uniform1f(u.uPointerActive, this.pointerPresence);
+    gl.uniform1f(u.uHold, this.holdStrength);
+    gl.uniform1f(u.uFocusBoost, this.focusBoost + this.typingPulse);
+    gl.uniform1f(u.uLightMode, this.isLightMode ? 1.0 : 0.0);
+
+    for (let i = 0; i < GeminiAuraEngine.MAX_RIPPLES; i++) {
+      const r = this.ripples[i];
+      const off = i * 4;
+      this.rippleBuffer[off] = r.x;
+      this.rippleBuffer[off + 1] = r.y;
+      this.rippleBuffer[off + 2] = r.startTime;
+      this.rippleBuffer[off + 3] = r.strength;
+    }
+    gl.uniform4fv(u.uRipples, this.rippleBuffer);
+
+    gl.uniform1f(u.uGlowIntensity, this.tuning.glowIntensity);
+    gl.uniform1f(u.uPointerPull, this.tuning.pointerPull);
+    gl.uniform1f(u.uGrain, this.tuning.matteGrain);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
 }
-`;
 
+/**
+ * Mounts the Gemini Atmospheric Aura engine inside the given container.
+ * Returns an instance object with update() and destroy() methods.
+ */
 export function mountAurora(containerEl, userOptions = {}) {
   if (!containerEl || typeof window === 'undefined' || typeof document === 'undefined') {
     return {
       update() {},
+      triggerRipple() {},
+      setFocusBoost() {},
+      nudgeTypingPulse() {},
       destroy() {}
     };
   }
@@ -197,272 +890,88 @@ export function mountAurora(containerEl, userOptions = {}) {
     createdCanvas = true;
   }
 
-  const parseSettings = (opts = {}) => {
-    const merged = { ...DEFAULT_AURORA_OPTIONS, ...opts };
+  const isLight = Boolean(userOptions.lightMode);
+  const engine = new GeminiAuraEngine(canvas, {
+    lightMode: isLight,
+    tuning: {
+      glowIntensity: isLight ? 0.65 : 1.0,
+      breathSpeed: 1.0,
+      pointerPull: 1.0,
+      matteGrain: 0.7
+    }
+  });
+
+  function clientToNorm(clientX, clientY) {
     return {
-      colors: Array.isArray(merged.colors) && merged.colors.length >= 4 ? merged.colors : DEFAULT_AURORA_OPTIONS.colors,
-      lightMode: Boolean(merged.lightMode),
-      opacity: typeof merged.opacity === 'number' ? Math.max(0, Math.min(1, merged.opacity)) : 0.85,
-      speed: typeof merged.speed === 'number' ? Math.max(0.1, merged.speed) : 1.0,
-      interactive: Boolean(merged.interactive),
-      rippleDuration: typeof merged.rippleDuration === 'number' ? merged.rippleDuration : 1.4
+      x: Math.min(1, Math.max(0, clientX / window.innerWidth)),
+      y: Math.min(1, Math.max(0, 1 - clientY / window.innerHeight)),
     };
-  };
-
-  let currentSettings = parseSettings(userOptions);
-  let isDestroyed = false;
-  let raf = 0;
-  let startTime = performance.now();
-  let visible = true;
-  let pageVisible = typeof document !== 'undefined' ? document.visibilityState !== 'hidden' : true;
-  const reduceMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-  // Interaction State
-  const pointer = { x: 0.5, y: 0.3, active: 0.0 };
-  const targetPointer = { x: 0.5, y: 0.3, active: 0.0 };
-  let rippleState = { x: -1, y: -1, startTime: -10, duration: 1.5 };
-
-  // Try WebGL2 first
-  let gl = null;
-  try {
-    gl = canvas.getContext('webgl2', {
-      alpha: true,
-      antialias: false,
-      depth: false,
-      stencil: false,
-      powerPreference: 'low-power'
-    });
-  } catch (err) {
-    gl = null;
   }
 
-  let program = null;
-  let quadVao = null;
-  let quadBuffer = null;
-  let uResolution = null;
-  let uTime = null;
-  let uPointer = null;
-  let uPointerActive = null;
-  let uRipple = null;
-  let uColor1 = null;
-  let uColor2 = null;
-  let uColor3 = null;
-  let uColor4 = null;
-  let uOpacity = null;
-  let uLightMode = null;
-
-  if (gl) {
-    const compileShader = (type, source) => {
-      const shader = gl.createShader(type);
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.warn('Aurora shader compile failed:', gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        return null;
-      }
-      return shader;
-    };
-
-    const vs = compileShader(gl.VERTEX_SHADER, VS_SOURCE);
-    const fs = compileShader(gl.FRAGMENT_SHADER, FS_SOURCE);
-
-    if (vs && fs) {
-      program = gl.createProgram();
-      gl.attachShader(program, vs);
-      gl.attachShader(program, fs);
-      gl.linkProgram(program);
-
-      if (gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        gl.useProgram(program);
-        uResolution = gl.getUniformLocation(program, 'u_resolution');
-        uTime = gl.getUniformLocation(program, 'u_time');
-        uPointer = gl.getUniformLocation(program, 'u_pointer');
-        uPointerActive = gl.getUniformLocation(program, 'u_pointer_active');
-        uRipple = gl.getUniformLocation(program, 'u_ripple');
-        uColor1 = gl.getUniformLocation(program, 'u_color1');
-        uColor2 = gl.getUniformLocation(program, 'u_color2');
-        uColor3 = gl.getUniformLocation(program, 'u_color3');
-        uColor4 = gl.getUniformLocation(program, 'u_color4');
-        uOpacity = gl.getUniformLocation(program, 'u_opacity');
-        uLightMode = gl.getUniformLocation(program, 'u_light_mode');
-
-        // Fullscreen quad
-        quadVao = gl.createVertexArray();
-        gl.bindVertexArray(quadVao);
-
-        quadBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
-        // Triangle strip covering -1..1
-        const quadPositions = new Float32Array([
-          -1.0, -1.0,
-           1.0, -1.0,
-          -1.0,  1.0,
-           1.0,  1.0
-        ]);
-        gl.bufferData(gl.ARRAY_BUFFER, quadPositions, gl.STATIC_DRAW);
-
-        const aPosition = gl.getAttribLocation(program, 'a_position');
-        gl.enableVertexAttribArray(aPosition);
-        gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
-
-        gl.bindVertexArray(null);
-      } else {
-        console.warn('Aurora program link failed:', gl.getProgramInfoLog(program));
-        gl = null;
-      }
-    } else {
-      gl = null;
-    }
-  }
-
-  // 2D fallback context if WebGL2 failed
-  const ctx2d = gl ? null : canvas.getContext('2d');
-
-  let width = 1;
-  let height = 1;
-  let dpr = 1;
-
-  const resize = () => {
-    if (isDestroyed || !containerEl || !canvas) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = Math.max(1, containerEl.clientWidth || window.innerWidth || 1);
-    height = Math.max(1, containerEl.clientHeight || window.innerHeight || 1);
-
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-
-    if (gl) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    }
+  const handlePointerMove = (e) => {
+    const p = clientToNorm(e.clientX, e.clientY);
+    engine.updatePointer(p.x, p.y);
   };
 
-  resize();
-  window.addEventListener('resize', resize, { passive: true });
-
-  const onPointerMove = (e) => {
-    if (isDestroyed || !currentSettings.interactive) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    targetPointer.x = x;
-    targetPointer.y = 1.0 - y; // OpenGL coordinates
-    targetPointer.active = 1.0;
+  const handlePointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return;
+    const p = clientToNorm(e.clientX, e.clientY);
+    engine.beginHold(p.x, p.y, e.pointerType === 'touch');
   };
 
-  const onPointerDown = (e) => {
-    if (isDestroyed || !currentSettings.interactive) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = 1.0 - Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    const now = (performance.now() - startTime) / 1000;
-    rippleState = {
-      x,
-      y,
-      startTime: now,
-      duration: currentSettings.rippleDuration
-    };
+  const handlePointerUp = (e) => {
+    const p = clientToNorm(e.clientX, e.clientY);
+    engine.endHold(p.x, p.y);
   };
 
-  window.addEventListener('pointermove', onPointerMove, { passive: true });
-  window.addEventListener('pointerdown', onPointerDown, { passive: true });
-
-  const onVisibilityChange = () => {
-    pageVisible = document.visibilityState !== 'hidden';
-  };
-  document.addEventListener('visibilitychange', onVisibilityChange);
-
-  // IntersectionObserver
-  let io = null;
-  if (typeof IntersectionObserver !== 'undefined' && containerEl) {
-    io = new IntersectionObserver((entries) => {
-      visible = entries[0]?.isIntersecting ?? true;
-    }, { threshold: 0.05 });
-    io.observe(containerEl);
-  }
-
-  // Render loop
-  const loop = (now) => {
-    if (isDestroyed) return;
-
-    if (visible && pageVisible) {
-      const elapsed = (now - startTime) / 1000 * currentSettings.speed;
-
-      // Lerp pointer smoothly
-      pointer.x += (targetPointer.x - pointer.x) * 0.06;
-      pointer.y += (targetPointer.y - pointer.y) * 0.06;
-      pointer.active += (targetPointer.active - pointer.active) * 0.05;
-
-      if (gl && program && quadVao) {
-        gl.useProgram(program);
-
-        gl.uniform2f(uResolution, canvas.width, canvas.height);
-        gl.uniform1f(uTime, elapsed);
-        gl.uniform2f(uPointer, pointer.x, pointer.y);
-        gl.uniform1f(uPointerActive, pointer.active);
-        gl.uniform4f(uRipple, rippleState.x, rippleState.y, rippleState.startTime, rippleState.duration);
-
-        const c1 = parseHexColor(currentSettings.colors[0]);
-        const c2 = parseHexColor(currentSettings.colors[1]);
-        const c3 = parseHexColor(currentSettings.colors[2]);
-        const c4 = parseHexColor(currentSettings.colors[3]);
-
-        gl.uniform3f(uColor1, c1[0], c1[1], c1[2]);
-        gl.uniform3f(uColor2, c2[0], c2[1], c2[2]);
-        gl.uniform3f(uColor3, c3[0], c3[1], c3[2]);
-        gl.uniform3f(uColor4, c4[0], c4[1], c4[2]);
-
-        gl.uniform1f(uOpacity, currentSettings.opacity);
-        gl.uniform1f(uLightMode, currentSettings.lightMode ? 1.0 : 0.0);
-
-        gl.bindVertexArray(quadVao);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        gl.bindVertexArray(null);
-      } else if (ctx2d) {
-        // 2D Procedural mesh fallback
-        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-        const w = canvas.width;
-        const h = canvas.height;
-        const grad = ctx2d.createLinearGradient(0, 0, 0, h * 0.7);
-        grad.addColorStop(0, currentSettings.colors[0]);
-        grad.addColorStop(0.35, currentSettings.colors[1]);
-        grad.addColorStop(0.7, currentSettings.colors[2]);
-        grad.addColorStop(1, 'transparent');
-        ctx2d.fillStyle = grad;
-        ctx2d.globalAlpha = currentSettings.opacity * 0.4;
-        ctx2d.fillRect(0, 0, w, h);
-      }
-    }
-
-    raf = requestAnimationFrame(loop);
+  const handlePointerCancel = () => {
+    engine.endHold();
   };
 
-  raf = requestAnimationFrame(loop);
+  const handlePointerLeave = () => {
+    engine.setPointerPresent(false);
+  };
+
+  window.addEventListener('pointermove', handlePointerMove, { passive: true });
+  window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+  window.addEventListener('pointerup', handlePointerUp, { passive: true });
+  window.addEventListener('pointercancel', handlePointerCancel, { passive: true });
+  document.addEventListener('pointerleave', handlePointerLeave, { passive: true });
+
+  engine.start();
 
   return {
+    engine,
     update(newOptions = {}) {
-      currentSettings = parseSettings({ ...currentSettings, ...newOptions });
+      if (newOptions.lightMode !== undefined) {
+        engine.setLightMode(newOptions.lightMode);
+        engine.setTuning({ glowIntensity: newOptions.lightMode ? 0.65 : 1.0 });
+      }
+      if (newOptions.preset) {
+        engine.setPreset(newOptions.preset);
+      }
+      if (newOptions.tuning) {
+        engine.setTuning(newOptions.tuning);
+      }
+    },
+    triggerRipple(normX, normY, strength) {
+      engine.triggerRipple(normX, normY, strength);
+    },
+    setFocusBoost(active, level) {
+      engine.setFocusBoost(active, level);
+    },
+    nudgeTypingPulse(amount) {
+      engine.nudgeTypingPulse(amount);
     },
     destroy() {
-      if (isDestroyed) return;
-      isDestroyed = true;
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      if (io) io.disconnect();
-
-      if (gl) {
-        if (quadBuffer) gl.deleteBuffer(quadBuffer);
-        if (quadVao) gl.deleteVertexArray(quadVao);
-        if (program) gl.deleteProgram(program);
-        const ext = gl.getExtension('WEBGL_lose_context');
-        if (ext) ext.loseContext();
-      }
-
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerCancel);
+      document.removeEventListener('pointerleave', handlePointerLeave);
+      engine.destroy();
       if (createdCanvas && canvas.parentNode) {
-        canvas.remove();
+        canvas.parentNode.removeChild(canvas);
       }
     }
   };

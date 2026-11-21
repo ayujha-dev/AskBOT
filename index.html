@@ -262,80 +262,98 @@
       </aside>
     </main>
 
-    <!-- Floating Pill Composer (ChatGPT / Claude Style Floating Overlay) -->
+    <!-- Floating Pill Composer (ChatGPT / Claude / Gemini Style Floating Dock) -->
     <div class="absolute bottom-0 left-0 right-0 p-4 md:pb-6 flex justify-center z-20 pointer-events-none">
-      <div id="chat-composer" class="w-full composer-box pointer-events-auto p-2.5 flex flex-col gap-2">
+      <div id="chat-composer" class="w-full composer-box composer-shell pointer-events-auto flex flex-col">
         
+        <!-- Top Context Strip (Inside Outer Shell, Above Inner Card) -->
+        <div class="composer-context-strip flex items-center justify-between px-3 pt-1 pb-1.5 text-xs">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <!-- Web Search Mode Toggle Button -->
+            <button id="toggle-web-search" type="button" class="composer-ghost-toggle flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Ground response with live web connection (Free DuckDuckGo & Wikipedia search)">
+              <svg class="w-3.5 h-3.5 flex-shrink-0"><use href="#icon-globe"/></svg>
+              <span>Search</span>
+              <span id="web-search-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0"></span>
+            </button>
+
+            <!-- Code Interpreter Mode Toggle Button -->
+            <button id="toggle-code-interpreter" type="button" class="composer-ghost-toggle flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition" title="Execute Python client-side via Pyodide WASM">
+              <svg class="w-3.5 h-3.5 flex-shrink-0"><use href="#icon-terminal"/></svg>
+              <span>Code</span>
+              <span id="code-interpreter-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500 flex-shrink-0"></span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Live Estimated Context Token Usage -->
+            <div class="text-[11px] text-[var(--text-muted)] font-mono tabular-nums" id="token-budget-indicator">
+              0 tokens
+            </div>
+          </div>
+        </div>
+
         <!-- Attached Files Preview Tray -->
-        <div id="attachment-preview-tray" class="flex items-center gap-2 flex-wrap px-2 pt-1 empty:hidden">
+        <div id="attachment-preview-tray" class="flex items-center gap-2 flex-wrap px-3 pb-1.5 empty:hidden">
           <!-- File chips will be rendered here -->
         </div>
 
-        <!-- Input Row -->
-        <div class="flex items-end gap-2 px-2">
-          <!-- File Upload Button -->
-          <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*,.txt,.md,.py,.js,.html,.css,.json,.csv,.ts">
-          <button id="btn-attach-file" class="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition" title="Attach image, video (Gemini), or text/code file">
-            <svg class="w-5 h-5"><use href="#icon-paperclip"/></svg>
-          </button>
-
+        <!-- Inner Elevated Input Card -->
+        <div class="composer-card flex flex-col">
           <!-- Auto-expanding Textarea -->
-          <textarea id="composer-textarea" rows="1" placeholder="Ask anything... (Enter to send, Shift+Enter for newline)" class="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] max-h-44 py-2 leading-relaxed"></textarea>
+          <textarea id="composer-textarea" rows="1" placeholder="Ask anything... (Enter to send, Shift+Enter for newline)" class="w-full bg-transparent border-0 outline-none resize-none text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] max-h-56 py-1 leading-relaxed"></textarea>
 
-          <!-- Send / Stop Button -->
-          <button id="btn-send-message" class="p-2.5 rounded-full bg-[var(--accent-blue)] text-white hover:opacity-90 ui-transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md" title="Send message">
-            <svg class="w-4 h-4"><use href="#icon-arrow-up"/></svg>
-          </button>
-        </div>
+          <!-- File Upload Hidden Input -->
+          <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*,.txt,.md,.py,.js,.html,.css,.json,.csv,.ts">
 
-        <!-- Mode Toggles & Thinking Pill Row -->
-        <div class="flex items-center justify-between border-t border-[var(--surface-border)] pt-2 px-2 text-xs">
-          <div class="flex items-center gap-2 flex-wrap">
-            <!-- Model Switcher inside Chat Input -->
-            <div class="relative inline-block">
-              <button id="composer-model-pill" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-spring font-medium text-[11px] max-w-[200px] truncate group" title="Switch AI Model">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
-                <span id="composer-model-name" class="truncate font-medium">Select Model</span>
-                <svg class="w-2.5 h-2.5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] flex-shrink-0 ui-transition"><use href="#icon-chevron-down"/></svg>
+          <!-- Inner Bottom Action Row -->
+          <div class="flex items-center justify-between pt-2.5 text-xs">
+            <!-- Left Actions -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <!-- File Upload Button (+) -->
+              <button id="btn-attach-file" type="button" class="btn-composer-icon p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition" title="Attach image, video (Gemini), or text/code file">
+                <svg class="w-4 h-4"><use href="#icon-plus"/></svg>
               </button>
-            </div>
 
-            <!-- Code Interpreter Mode Toggle Button -->
-            <button id="toggle-code-interpreter" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Execute Python client-side via Pyodide WASM">
-              <svg class="w-3.5 h-3.5"><use href="#icon-python"/></svg>
-              <span>Code Interpreter</span>
-              <span id="code-interpreter-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
-            </button>
-
-            <!-- Web Search Mode Toggle Button -->
-            <button id="toggle-web-search" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-cyan)] ui-transition font-medium text-[11px]" title="Ground response with live web connection (Free DuckDuckGo & Wikipedia search)">
-              <svg class="w-3.5 h-3.5"><use href="#icon-search"/></svg>
-              <span>Web Search</span>
-              <span id="web-search-status-badge" class="w-1.5 h-1.5 rounded-full bg-zinc-500"></span>
-            </button>
-
-            <!-- Thinking Mode Selector Pill (Min: Low, No Off State) -->
-            <div class="relative inline-block">
-              <button id="btn-thinking-menu" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--accent-blue)] hover:border-[var(--accent-blue)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth (Minimum: Low)">
-                <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
-                <span>Thinking: <strong id="thinking-level-label" class="font-semibold text-[var(--text-primary)]">Low</strong></span>
-                <svg class="w-2.5 h-2.5 ml-0.5"><use href="#icon-chevron-down"/></svg>
-              </button>
-              <!-- Thinking Dropdown (3 levels: Low | Medium | High) -->
-              <div id="thinking-dropdown" class="hidden absolute bottom-full mb-1 left-0 w-36 py-1 rounded-xl glass-card z-30 text-xs shadow-xl">
-                <button data-level="low" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition flex items-center justify-between">
-                  <span>Low</span>
-                  <span class="text-[10px] text-[var(--text-muted)]">Default</span>
+              <!-- Model Switcher inside Chat Input -->
+              <div class="relative inline-block">
+                <button id="composer-model-pill" type="button" class="btn-composer-ghost flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[var(--text-primary)] font-medium text-[11px] max-w-[190px] truncate group ui-transition" title="Switch AI Model">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
+                  <span id="composer-model-name" class="truncate font-medium">Select Model</span>
+                  <svg class="w-2.5 h-2.5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] flex-shrink-0 ui-transition"><use href="#icon-chevron-down"/></svg>
                 </button>
-                <button data-level="medium" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Medium</button>
-                <button data-level="high" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">High</button>
               </div>
             </div>
-          </div>
 
-          <!-- Live Estimated Context Token Usage -->
-          <div class="text-[11px] text-[var(--text-muted)] font-mono hidden sm:inline" id="token-budget-indicator">
-            0 tokens
+            <!-- Right Actions -->
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <!-- Thinking Mode Selector Pill (Min: Low, No Off State) -->
+              <div class="relative inline-block">
+                <button id="btn-thinking-menu" type="button" class="btn-composer-ghost flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition font-medium text-[11px]" title="Reasoning / Thinking depth (Minimum: Low)">
+                  <svg class="w-3.5 h-3.5"><use href="#icon-brain"/></svg>
+                  <span>Thinking: <strong id="thinking-level-label" class="font-semibold text-[var(--text-primary)]">Low</strong></span>
+                  <svg class="w-2.5 h-2.5 ml-0.5"><use href="#icon-chevron-down"/></svg>
+                </button>
+                <!-- Thinking Dropdown (3 levels: Low | Medium | High, anchors upward) -->
+                <div id="thinking-dropdown" class="hidden absolute bottom-[calc(100%+8px)] mb-1 right-0 w-36 py-1 rounded-xl glass-card z-50 text-xs shadow-xl">
+                  <button data-level="low" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition flex items-center justify-between">
+                    <span>Low</span>
+                    <span class="text-[10px] text-[var(--text-muted)]">Default</span>
+                  </button>
+                  <button data-level="medium" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">Medium</button>
+                  <button data-level="high" class="w-full text-left px-3 py-1.5 hover:bg-[var(--surface-panel)] text-[var(--text-primary)] ui-transition">High</button>
+                </div>
+              </div>
+
+              <!-- Voice Input Button (SpeechRecognition) -->
+              <button id="btn-voice-input" type="button" class="btn-composer-icon p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel-hover)] ui-transition" title="Dictate message with voice">
+                <svg class="w-4 h-4"><use href="#icon-mic"/></svg>
+              </button>
+
+              <!-- Primary Action Send / Stop Button (34px circle) -->
+              <button id="btn-send-message" type="button" class="btn-primary-circle w-[34px] h-[34px] rounded-full flex items-center justify-center ui-transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md flex-shrink-0" title="Send message">
+                <svg class="w-4 h-4"><use href="#icon-arrow-up"/></svg>
+              </button>
+            </div>
           </div>
         </div>
 

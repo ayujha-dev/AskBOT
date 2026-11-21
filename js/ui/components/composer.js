@@ -2,12 +2,15 @@ import { store } from '../../state/store.js';
 
 export class ComposerComponent {
   constructor(options = {}) {
+    this.options = options;
     this.onSend = options.onSend || (() => {});
     this.onSelectModel = options.onSelectModel || (() => {});
+    this.onTypingPulse = options.onTypingPulse || null;
     this.fileManager = options.fileManager || null;
 
     this.textarea = document.getElementById('composer-textarea');
     this.btnSend = document.getElementById('btn-send-message');
+    this.btnVoice = document.getElementById('btn-voice-input');
 
     this.modelPill = document.getElementById('composer-model-pill');
     this.modelName = document.getElementById('composer-model-name');
@@ -23,6 +26,8 @@ export class ComposerComponent {
 
     this.isStreaming = false;
     this.onStop = null;
+    this.isRecording = false;
+    this.recognition = null;
 
     this.init();
   }
@@ -33,6 +38,17 @@ export class ComposerComponent {
       this.textarea.style.height = 'auto';
       this.textarea.style.height = Math.min(this.textarea.scrollHeight, 220) + 'px';
       this.updateSendButtonState();
+      this.options.backgroundManager?.activeInstance?.nudgeTypingPulse?.(0.18);
+      if (typeof this.onTypingPulse === 'function') this.onTypingPulse();
+    });
+
+    // Reactive aura focus boost on textarea focus/blur
+    this.textarea?.addEventListener('focus', () => {
+      this.options.backgroundManager?.activeInstance?.setFocusBoost?.(true, 0.45);
+    });
+
+    this.textarea?.addEventListener('blur', () => {
+      this.options.backgroundManager?.activeInstance?.setFocusBoost?.(false);
     });
 
     // Handle direct paste inside composer textarea (screenshots, images, files)
@@ -87,6 +103,11 @@ export class ComposerComponent {
       } else {
         this.submit();
       }
+    });
+
+    // Voice dictation button click
+    this.btnVoice?.addEventListener('click', () => {
+      this.toggleVoiceInput();
     });
 
     // Code Interpreter toggle
@@ -149,6 +170,69 @@ export class ComposerComponent {
     this.syncModesUI(store.getState().modes);
     this.syncModelDisplay(store.getState().selectedModel, store.getState().activeProvider);
     this.updateSendButtonState();
+  }
+
+  toggleVoiceInput() {
+    if (this.isRecording) {
+      this.stopVoiceInput();
+      return;
+    }
+
+    const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!SpeechRecognition) {
+      alert('Voice dictation is not supported by your browser.');
+      return;
+    }
+
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+
+      this.recognition.onstart = () => {
+        this.isRecording = true;
+        this.btnVoice?.classList.add('is-recording');
+        this.btnVoice?.setAttribute('title', 'Listening... Click to stop');
+      };
+
+      this.recognition.onresult = (e) => {
+        const transcript = Array.from(e.results)
+          .map(r => r[0].transcript)
+          .join('');
+        if (this.textarea) {
+          this.textarea.value = transcript;
+          this.textarea.style.height = 'auto';
+          this.textarea.style.height = Math.min(this.textarea.scrollHeight, 220) + 'px';
+          this.updateSendButtonState();
+        }
+      };
+
+      this.recognition.onerror = () => {
+        this.stopVoiceInput();
+      };
+
+      this.recognition.onend = () => {
+        this.stopVoiceInput();
+      };
+
+      this.recognition.start();
+    } catch (err) {
+      console.warn('[Composer] Voice input failed to start:', err);
+      this.stopVoiceInput();
+    }
+  }
+
+  stopVoiceInput() {
+    this.isRecording = false;
+    this.btnVoice?.classList.remove('is-recording');
+    this.btnVoice?.setAttribute('title', 'Dictate message with voice');
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (_) {}
+      this.recognition = null;
+    }
   }
 
   syncModelDisplay(model = store.getState().selectedModel, provider = store.getState().activeProvider) {
@@ -219,12 +303,12 @@ export class ComposerComponent {
       this.btnSend.innerHTML = '<svg class="w-4 h-4 text-white"><use href="#icon-square"/></svg>';
       this.btnSend.title = 'Stop generating';
       this.btnSend.disabled = false;
-      this.btnSend.classList.add('bg-rose-500', 'hover:bg-rose-600');
+      this.btnSend.classList.add('is-stopping', 'bg-rose-500', 'hover:bg-rose-600');
       this.btnSend.classList.remove('bg-[var(--accent-blue)]');
     } else {
-      this.btnSend.innerHTML = '<svg class="w-4 h-4 text-white"><use href="#icon-arrow-up"/></svg>';
+      this.btnSend.innerHTML = '<svg class="w-4 h-4"><use href="#icon-arrow-up"/></svg>';
       this.btnSend.title = 'Send message';
-      this.btnSend.classList.remove('bg-rose-500', 'hover:bg-rose-600');
+      this.btnSend.classList.remove('is-stopping', 'bg-rose-500', 'hover:bg-rose-600');
       this.btnSend.classList.add('bg-[var(--accent-blue)]');
       this.updateSendButtonState();
     }

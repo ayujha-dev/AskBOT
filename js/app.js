@@ -72,6 +72,7 @@ class AppCoordinator {
 
     this.composer = new ComposerComponent({
       fileManager: this.fileManager,
+      backgroundManager: this.backgroundManager,
       onSend: (text) => this.handleSendMessage(text),
       onSelectModel: (pill) => this.showModelPickerDropdown(pill, 'top')
     });
