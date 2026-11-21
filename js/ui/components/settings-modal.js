@@ -159,7 +159,7 @@ export class SettingsModal {
 
   static applyFontSize(size) {
     const num = Math.min(20, Math.max(13, Number(size) || 15));
-    const codeSize = Math.round(num * 0.9 * 10) / 10;
+    const codeSize = Math.max(12, Math.round((num - 1.5) * 10) / 10);
     const lineHeight = 1.65;
     if (typeof document !== 'undefined' && document.documentElement) {
       document.documentElement.style.setProperty('--chat-font-size', `${num}px`);
@@ -196,7 +196,7 @@ export class SettingsModal {
         preview.style.fontSize = `${size}px`;
         const code = preview.querySelector('code');
         if (code) {
-          code.style.fontSize = `${Math.round(size * 0.9 * 10) / 10}px`;
+          code.style.fontSize = `${Math.max(12, Math.round((size - 1.5) * 10) / 10)}px`;
         }
       }
       presetBtns.forEach(btn => {

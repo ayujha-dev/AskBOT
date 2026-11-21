@@ -125,6 +125,19 @@ export class MessagesComponent {
     this.scrollToBottom();
   }
 
+  ensureBottomSpacer() {
+    if (!this.container) return;
+    let spacer = this.container.querySelector('#messages-bottom-spacer');
+    if (!spacer) {
+      spacer = document.createElement('div');
+      spacer.id = 'messages-bottom-spacer';
+      spacer.className = 'w-full shrink-0 pointer-events-none';
+      spacer.style.height = '220px';
+      spacer.style.flexShrink = '0';
+    }
+    this.container.appendChild(spacer);
+  }
+
   render(messages) {
     if (!this.container || !this.emptyState) return;
 
@@ -139,14 +152,34 @@ export class MessagesComponent {
     this.container.classList.remove('hidden');
     this.container.innerHTML = '';
 
+    let currentTurnEl = null;
     messages.forEach(msg => {
-      this.appendMessageElement(msg);
+      if (msg.role === 'user' || !currentTurnEl) {
+        currentTurnEl = document.createElement('div');
+        currentTurnEl.className = 'chat-turn w-full space-y-4';
+        this.container.appendChild(currentTurnEl);
+      }
+      const el = this.createMessageElement(msg);
+      currentTurnEl.appendChild(el);
     });
 
+    this.ensureBottomSpacer();
     this.scrollToBottom();
   }
 
   appendMessageElement(msg) {
+    let lastTurn = this.container?.querySelector('.chat-turn:last-of-type');
+    if (msg.role === 'user' || !lastTurn) {
+      lastTurn = document.createElement('div');
+      lastTurn.className = 'chat-turn w-full space-y-4';
+      this.container?.appendChild(lastTurn);
+    }
+    const el = this.createMessageElement(msg);
+    lastTurn.appendChild(el);
+    this.ensureBottomSpacer();
+  }
+
+  createMessageElement(msg) {
     const isUser = msg.role === 'user';
     const wrapper = document.createElement('div');
     wrapper.id = `msg-${msg.id}`;
@@ -157,9 +190,9 @@ export class MessagesComponent {
       const userCol = document.createElement('div');
       userCol.className = 'flex flex-col items-end w-full message-user-wrap';
 
-      // User bubble
+      // User bubble (Tier 2 Frosted Pill)
       const bubble = document.createElement('div');
-      bubble.className = 'message-user-bubble px-4 py-3 rounded-2xl bg-[var(--surface-card)] border border-[var(--surface-border)] text-sm text-[var(--text-primary)] shadow-sm leading-relaxed';
+      bubble.className = 'message-user-bubble px-4 py-3 rounded-2xl border text-[var(--text-primary)] shadow-sm leading-relaxed';
 
       // Attachments preview
       if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
@@ -219,7 +252,7 @@ export class MessagesComponent {
 
       // 2. Message Body (Markdown)
       const bodyEl = document.createElement('div');
-      bodyEl.className = 'prose text-sm text-[var(--text-primary)] leading-relaxed';
+      bodyEl.className = 'prose text-[var(--text-primary)] leading-relaxed';
       bodyEl.innerHTML = MarkdownRenderer.render(msg.content);
       assistantCol.appendChild(bodyEl);
 
@@ -232,7 +265,7 @@ export class MessagesComponent {
           Sources:
         </span>`;
 
-        msg.searchSources.forEach((s, idx) => {
+        msg.searchSources.forEach((s) => {
           let domain = s.domain;
           if (!domain && s.url) {
             try { domain = new URL(s.url).hostname.replace(/^www\./, ''); } catch { domain = ''; }
@@ -298,30 +331,57 @@ export class MessagesComponent {
       wrapper.appendChild(assistantCol);
     }
 
-    this.container.appendChild(wrapper);
+    return wrapper;
   }
 
-  createThoughtAccordion(thinkingText, isLive = false) {
+  createThoughtAccordion(thinkingText, isLive = false, durationSeconds = null) {
     const container = document.createElement('div');
-    container.className = 'thought-accordion my-2 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs overflow-hidden';
+    container.className = 'thought-accordion my-2.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs overflow-hidden ui-transition';
 
     const header = document.createElement('button');
-    header.className = 'w-full px-3.5 py-2 flex items-center justify-between text-left font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition';
-    const words = thinkingText.trim().split(/\s+/).length;
+    header.type = 'button';
+    header.className = 'thought-header w-full px-3.5 py-2 flex items-center justify-between text-left font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] ui-transition relative overflow-hidden group';
+
+    const words = thinkingText ? thinkingText.trim().split(/\s+/).filter(Boolean).length : 0;
+    const durationLabel = durationSeconds
+      ? `Thought for ${durationSeconds}s`
+      : (words > 0 ? `Thought process (${words} words)` : 'Thought process');
+
+    const liveIndicator = `
+      <div class="thinking-live-badge inline-flex items-center gap-1.5 text-[var(--accent-blue)]">
+        <svg class="w-3.5 h-3.5 animate-spin"><use href="#icon-sparkles"/></svg>
+        <span class="font-medium text-xs">Thinking</span>
+        <span class="inline-flex items-center gap-0.5 ml-0.5">
+          <span class="w-1 h-1 rounded-full bg-[var(--accent-blue)] animate-bounce" style="animation-delay: 0ms"></span>
+          <span class="w-1 h-1 rounded-full bg-[var(--accent-blue)] animate-bounce" style="animation-delay: 150ms"></span>
+          <span class="w-1 h-1 rounded-full bg-[var(--accent-blue)] animate-bounce" style="animation-delay: 300ms"></span>
+        </span>
+      </div>
+      <div class="thinking-sweep-bar absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-blue)] to-transparent animate-pulse"></div>
+    `;
+
+    const doneIndicator = `
+      <div class="thinking-done-badge inline-flex items-center gap-2">
+        <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-brain"/></svg>
+        <span class="thought-label-text font-medium text-xs text-[var(--text-secondary)]">${escapeHtml(durationLabel)}</span>
+      </div>
+    `;
 
     header.innerHTML = `
-      <div class="flex items-center gap-2">
-        <svg class="w-3.5 h-3.5 text-[var(--accent-blue)] ${isLive ? 'animate-pulse' : ''}"><use href="#icon-brain"/></svg>
-        <span>Thought process <span class="text-[10px] text-[var(--text-muted)] font-normal">(${words} words)</span></span>
+      <div class="thought-status-wrap flex items-center gap-2">
+        ${isLive ? liveIndicator : doneIndicator}
       </div>
-      <svg class="chevron-icon w-3.5 h-3.5 transform transition-transform duration-200"><use href="#icon-chevron-down"/></svg>
+      <div class="flex items-center gap-1.5 text-[var(--text-muted)] group-hover:text-[var(--text-primary)] ui-transition">
+        <span class="text-[10px] text-[var(--text-muted)]">Steps</span>
+        <svg class="chevron-icon w-3.5 h-3.5 transform transition-transform duration-200"><use href="#icon-chevron-down"/></svg>
+      </div>
     `;
 
     const content = document.createElement('div');
     content.className = 'thought-accordion-content border-t border-[var(--surface-border)]';
     content.innerHTML = `
       <div class="thought-inner p-3.5 text-[11px] text-[var(--text-secondary)] font-mono whitespace-pre-wrap bg-[var(--surface-card)] max-h-72 overflow-y-auto leading-relaxed">
-        ${escapeHtml(thinkingText)}
+        ${escapeHtml(thinkingText || '')}
       </div>
     `;
 
@@ -333,11 +393,6 @@ export class MessagesComponent {
       }
     });
 
-    if (isLive) {
-      content.classList.add('expanded');
-      header.querySelector('.chevron-icon')?.classList.add('rotate-180');
-    }
-
     container.appendChild(header);
     container.appendChild(content);
     return container;
@@ -348,12 +403,19 @@ export class MessagesComponent {
     this.emptyState.classList.add('hidden');
     this.container.classList.remove('hidden');
 
+    let lastTurn = this.container.querySelector('.chat-turn:last-of-type');
+    if (!lastTurn) {
+      lastTurn = document.createElement('div');
+      lastTurn.className = 'chat-turn w-full space-y-4';
+      this.container.appendChild(lastTurn);
+    }
+
     const wrapper = document.createElement('div');
     wrapper.id = `msg-${id}`;
     wrapper.className = 'message-entry flex gap-3 justify-start';
 
     const assistantCol = document.createElement('div');
-    assistantCol.className = 'w-full max-w-full space-y-3';
+    assistantCol.className = 'w-full max-w-full space-y-3 message-assistant-body';
 
     // Thinking container placeholder
     const thinkingPlaceholder = document.createElement('div');
@@ -369,7 +431,7 @@ export class MessagesComponent {
     // Body
     const bodyEl = document.createElement('div');
     bodyEl.id = `streaming-body-${id}`;
-    bodyEl.className = 'prose text-sm text-[var(--text-primary)] leading-relaxed';
+    bodyEl.className = 'prose text-[var(--text-primary)] leading-relaxed';
     bodyEl.innerHTML = '<span class="inline-block w-2 h-4 bg-[var(--accent-blue)] animate-pulse rounded-sm"></span>';
     assistantCol.appendChild(bodyEl);
 
@@ -379,25 +441,34 @@ export class MessagesComponent {
     assistantCol.appendChild(sourcesPlaceholder);
 
     wrapper.appendChild(assistantCol);
-    this.container.appendChild(wrapper);
-    this.scrollToBottom();
+    lastTurn.appendChild(wrapper);
+    this.ensureBottomSpacer();
+
+    // Scroll latest input to top
+    const userBubble = lastTurn.querySelector('.message-user-bubble') || lastTurn;
+    if (userBubble && typeof userBubble.scrollIntoView === 'function') {
+      userBubble.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const thinkingStartTime = Date.now();
+    let hasThought = false;
 
     return {
       showSearchingStatus: (engineName = 'Brave') => {
         searchingStatus.className = 'flex items-center gap-2 py-1';
         searchingStatus.innerHTML = `
-          <div class="searching-pill">
-            <svg class="w-3.5 h-3.5 animate-spin"><use href="#icon-search"/></svg>
+          <div class="searching-pill inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-panel)] border border-[var(--surface-border)] text-xs text-[var(--text-muted)]">
+            <svg class="w-3.5 h-3.5 animate-spin text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
             <span>Searching ${escapeHtml(engineName)}...</span>
           </div>
         `;
-        this.scrollToBottom();
       },
       hideSearchingStatus: () => {
         searchingStatus.innerHTML = '';
         searchingStatus.className = 'hidden';
       },
       updateThinking: (fullThought) => {
+        hasThought = true;
         let acc = thinkingPlaceholder.querySelector('.thought-accordion');
         if (!acc) {
           acc = this.createThoughtAccordion(fullThought, true);
@@ -405,13 +476,7 @@ export class MessagesComponent {
         } else {
           const inner = acc.querySelector('.thought-inner');
           if (inner) inner.textContent = fullThought;
-          const words = fullThought.trim().split(/\s+/).length;
-          const headerText = acc.querySelector('button span');
-          if (headerText) {
-            headerText.innerHTML = `Thought process <span class="text-[10px] text-[var(--text-muted)] font-normal">(${words} words)</span>`;
-          }
         }
-        this.scrollToBottom();
       },
       updateSources: (sources) => {
         if (!Array.isArray(sources) || sources.length === 0) return;
@@ -420,7 +485,7 @@ export class MessagesComponent {
             <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
             Sources:
           </span>
-          ${sources.map((s, idx) => {
+          ${sources.map((s) => {
             let domain = s.domain;
             if (!domain && s.url) {
               try { domain = new URL(s.url).hostname.replace(/^www\./, ''); } catch { domain = ''; }
@@ -435,21 +500,38 @@ export class MessagesComponent {
             `;
           }).join('')}
         </div>`;
-        this.scrollToBottom();
       },
       updateContent: (markdown) => {
         bodyEl.innerHTML = MarkdownRenderer.render(markdown);
-        this.scrollToBottom();
+        if (this.canvas) {
+          const scrollDistanceToBottom = this.canvas.scrollHeight - this.canvas.scrollTop - this.canvas.clientHeight;
+          if (scrollDistanceToBottom < 300) {
+            this.canvas.scrollTop = this.canvas.scrollHeight;
+          }
+        }
       },
       finalize: (finalMsg) => {
         searchingStatus.innerHTML = '';
         searchingStatus.className = 'hidden';
 
-        const acc = thinkingPlaceholder.querySelector('.thought-accordion-content');
-        if (acc) {
-          acc.classList.remove('expanded');
-          const chevron = thinkingPlaceholder.querySelector('.chevron-icon');
-          if (chevron) chevron.classList.remove('rotate-180');
+        if (hasThought) {
+          const elapsedSec = Math.max(1, Math.round((Date.now() - thinkingStartTime) / 1000));
+          const acc = thinkingPlaceholder.querySelector('.thought-accordion');
+          if (acc) {
+            const statusWrap = acc.querySelector('.thought-status-wrap');
+            if (statusWrap) {
+              statusWrap.innerHTML = `
+                <div class="thinking-done-badge inline-flex items-center gap-2">
+                  <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-brain"/></svg>
+                  <span class="thought-label-text font-medium text-xs text-[var(--text-secondary)]">Thought for ${elapsedSec}s</span>
+                </div>
+              `;
+            }
+            const content = acc.querySelector('.thought-accordion-content');
+            if (content) content.classList.remove('expanded');
+            const chevron = acc.querySelector('.chevron-icon');
+            if (chevron) chevron.classList.remove('rotate-180');
+          }
         }
       }
     };

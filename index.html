@@ -132,48 +132,49 @@
           <svg class="w-4 h-4 theme-icon-moon"><use href="#icon-moon"/></svg>
         </button>
       </div>
+
+      <!-- Subtle Creator Link in Sidebar Footer -->
+      <div class="pt-2 text-center">
+        <a href="https://github.com/ayujha-dev" target="_blank" rel="noopener noreferrer" class="brand-link" title="Visit ayujha-dev on GitHub">
+          <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)]"></span>
+          <span>made by ayujha-dev</span>
+        </a>
+      </div>
     </div>
   </aside>
 
   <!-- ==================== MAIN CONTENT AREA ==================== -->
   <div class="flex-1 flex flex-col h-full overflow-hidden relative z-10">
     
-    <!-- Header -->
-    <header id="app-header" class="h-14 flex items-center justify-between px-4 border-b border-[var(--surface-border)] glass-panel flex-shrink-0 z-20 relative">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <button id="btn-toggle-sidebar" class="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] ui-spring" title="Toggle sidebar">
-          <svg class="w-5 h-5"><use href="#icon-sliders"/></svg>
+    <!-- Header: Sticky Frosted Glass -->
+    <header id="app-header" class="h-14 sticky top-0 z-20 flex items-center justify-between px-4 border-b border-slate-200/60 dark:border-white/10 bg-white/75 dark:bg-slate-950/60 backdrop-blur-md flex-shrink-0">
+      <div class="flex items-center gap-3 min-w-0 flex-1 mr-3">
+        <button id="btn-toggle-sidebar" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60 ui-spring border-0 outline-none" title="Toggle sidebar">
+          <svg class="w-5 h-5"><use href="#icon-panel-left"/></svg>
         </button>
-        
-        <!-- Top-Left Branding Micro-Interaction -->
-        <a href="https://github.com/ayujha-dev" target="_blank" rel="noopener noreferrer" class="brand-link" title="Visit ayujha-dev on GitHub">
-          <span class="w-2 h-2 rounded-full bg-[var(--accent-blue)]"></span>
-          <span>made by ayujha-dev</span>
-        </a>
 
-        <!-- Breadcrumb / Active Conversation Title -->
-        <span class="text-[var(--surface-border)] text-xs hidden sm:inline">/</span>
-        <span id="header-chat-title" class="text-xs font-medium text-[var(--text-muted)] truncate max-w-[130px] sm:max-w-[200px] hidden sm:inline ui-transition" title="Current conversation">
+        <!-- Active Conversation Title (Expands before truncating) -->
+        <h1 id="header-chat-title" class="flex-1 min-w-0 truncate text-sm font-medium text-slate-800 dark:text-slate-100 ui-transition" title="Current conversation">
           New conversation
-        </span>
+        </h1>
       </div>
 
       <!-- Right Header Controls -->
       <div class="flex items-center gap-2">
-        <!-- Quick New Chat Button in Header -->
-        <button id="header-btn-new-chat" class="p-1.5 px-2.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-panel)] border border-[var(--surface-border)] ui-spring flex items-center gap-1.5 text-xs shadow-sm" title="Start new conversation">
+        <!-- Quick New Chat Button in Header (Hidden when sidebar is open) -->
+        <button id="header-btn-new-chat" class="hidden p-1.5 px-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-slate-200/80 dark:border-white/10 ui-spring flex items-center gap-1.5 text-xs shadow-sm" title="Start new conversation">
           <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-plus"/></svg>
-          <span class="hidden md:inline text-[11px] font-medium text-[var(--text-primary)]">New</span>
+          <span class="hidden md:inline text-[11px] font-medium">New</span>
         </button>
 
-        <!-- Header Token Indicator -->
-        <div id="header-token-indicator" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-muted)]" title="Context Token Budget">
-          <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+        <!-- Header Token Indicator (Retained hidden for test compatibility) -->
+        <div id="header-token-indicator" class="hidden">
           <span id="header-token-count">0 tokens</span>
         </div>
 
-        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--surface-border)] bg-[var(--surface-panel)] hover:bg-[var(--surface-panel-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] ui-spring" title="Model Parameters">
-          <svg class="w-4 h-4"><use href="#icon-sliders"/></svg>
+        <!-- Ghost Parameters Button with SlidersHorizontal -->
+        <button id="btn-toggle-params" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 data-[active=true]:bg-sky-500/10 data-[active=true]:text-sky-600 dark:data-[active=true]:text-sky-400 data-[active=true]:border-sky-500/30 border border-transparent ui-spring" title="Model Parameters">
+          <svg class="w-4 h-4"><use href="#icon-sliders-horizontal"/></svg>
           <span class="hidden sm:inline">Parameters</span>
         </button>
       </div>
@@ -280,7 +281,7 @@
 
           <!-- Send / Stop Button -->
           <button id="btn-send-message" class="p-2.5 rounded-full bg-[var(--accent-blue)] text-white hover:opacity-90 ui-transition disabled:opacity-40 disabled:cursor-not-allowed shadow-md" title="Send message">
-            <svg class="w-4 h-4"><use href="#icon-send"/></svg>
+            <svg class="w-4 h-4"><use href="#icon-arrow-up"/></svg>
           </button>
         </div>
 

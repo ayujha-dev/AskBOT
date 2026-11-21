@@ -21,6 +21,9 @@ export class ComposerComponent {
     this.thinkingDropdown = document.getElementById('thinking-dropdown');
     this.thinkingLabel = document.getElementById('thinking-level-label');
 
+    this.isStreaming = false;
+    this.onStop = null;
+
     this.init();
   }
 
@@ -77,9 +80,13 @@ export class ComposerComponent {
       }
     });
 
-    // Send button click
+    // Send / Stop button click
     this.btnSend?.addEventListener('click', () => {
-      this.submit();
+      if (this.isStreaming) {
+        if (typeof this.onStop === 'function') this.onStop();
+      } else {
+        this.submit();
+      }
     });
 
     // Code Interpreter toggle
@@ -200,6 +207,26 @@ export class ComposerComponent {
         this.btnThinking.classList.add('border-[var(--accent-blue)]', 'bg-[var(--accent-subtle)]', 'text-[var(--accent-blue)]');
         this.btnThinking.classList.remove('text-[var(--text-muted)]');
       }
+    }
+  }
+
+  setStreaming(isStreaming, onStop = null) {
+    this.isStreaming = Boolean(isStreaming);
+    this.onStop = onStop;
+    if (!this.btnSend) return;
+
+    if (this.isStreaming) {
+      this.btnSend.innerHTML = '<svg class="w-4 h-4 text-white"><use href="#icon-square"/></svg>';
+      this.btnSend.title = 'Stop generating';
+      this.btnSend.disabled = false;
+      this.btnSend.classList.add('bg-rose-500', 'hover:bg-rose-600');
+      this.btnSend.classList.remove('bg-[var(--accent-blue)]');
+    } else {
+      this.btnSend.innerHTML = '<svg class="w-4 h-4 text-white"><use href="#icon-arrow-up"/></svg>';
+      this.btnSend.title = 'Send message';
+      this.btnSend.classList.remove('bg-rose-500', 'hover:bg-rose-600');
+      this.btnSend.classList.add('bg-[var(--accent-blue)]');
+      this.updateSendButtonState();
     }
   }
 

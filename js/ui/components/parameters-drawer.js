@@ -171,6 +171,7 @@ export class ParametersDrawer {
       if (this.backdropEl) {
         this.backdropEl.classList.remove('hidden');
       }
+      this.btnToggle?.setAttribute('data-active', 'true');
     }
   }
 
@@ -180,6 +181,7 @@ export class ParametersDrawer {
       if (this.backdropEl) {
         this.backdropEl.classList.add('hidden');
       }
+      this.btnToggle?.setAttribute('data-active', 'false');
     }
   }
 

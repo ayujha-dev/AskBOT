@@ -94,12 +94,27 @@ export class SidebarComponent {
     this.applyTheme(store.getState().theme);
     this.renderActiveModel();
     this.renderHistory();
+    this.syncHeaderNewChatVisibility();
+  }
+
+  syncHeaderNewChatVisibility() {
+    if (!this.sidebarEl) return;
+    const isCollapsed = this.sidebarEl.classList.contains('-ml-64') || this.sidebarEl.classList.contains('md:-ml-72');
+    const headerNewBtn = document.getElementById('header-btn-new-chat');
+    if (headerNewBtn) {
+      if (isCollapsed) {
+        headerNewBtn.classList.remove('hidden');
+      } else {
+        headerNewBtn.classList.add('hidden');
+      }
+    }
   }
 
   toggleSidebar() {
     if (!this.sidebarEl) return;
     this.sidebarEl.classList.toggle('-ml-64');
     this.sidebarEl.classList.toggle('md:-ml-72');
+    this.syncHeaderNewChatVisibility();
   }
 
   toggleTheme() {

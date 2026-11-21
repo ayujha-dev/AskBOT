@@ -494,6 +494,11 @@ class AppCoordinator {
       let fullThinking = '';
       this.isStreaming = true;
       this.activeAbortController = new AbortController();
+      this.composer.setStreaming(true, () => {
+        if (this.activeAbortController) {
+          this.activeAbortController.abort();
+        }
+      });
 
       const composerBox = document.getElementById('chat-composer');
       composerBox?.classList.add('is-streaming');
@@ -558,6 +563,7 @@ class AppCoordinator {
       } finally {
         this.isStreaming = false;
         this.activeAbortController = null;
+        this.composer.setStreaming(false);
         composerBox?.classList.remove('is-streaming');
       }
     } catch (outerErr) {
