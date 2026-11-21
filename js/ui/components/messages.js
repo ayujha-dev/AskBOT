@@ -102,7 +102,7 @@ export class MessagesComponent {
 
     let inner = `<div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--surface-border)] font-semibold text-[11px] text-[var(--text-muted)]">
       <span>PYTHON OUTPUT</span>
-      <span class="${result.success ? 'text-emerald-500' : 'text-rose-500'}">${result.success ? 'Success' : 'Error'}</span>
+      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border ${result.success ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}">${result.success ? 'Success' : 'Error'}</span>
     </div>`;
 
     if (result.stdout) {
@@ -240,9 +240,20 @@ export class MessagesComponent {
 
       wrapper.appendChild(userCol);
     } else {
-      // Assistant message layout
+      // Assistant message layout: isolated elevated card with comfortable padding
       const assistantCol = document.createElement('div');
-      assistantCol.className = 'w-full max-w-full space-y-3 message-assistant-body';
+      assistantCol.className = 'w-full max-w-full space-y-4 message-assistant-card message-assistant-body';
+
+      // 0. Fixed Output Pill Header
+      const headerEl = document.createElement('div');
+      headerEl.className = 'assistant-card-header flex items-center justify-between pb-1';
+      headerEl.innerHTML = `
+        <div class="output-pill inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs font-medium text-[var(--text-secondary)] shadow-sm">
+          <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-sparkles"/></svg>
+          <span>AskBOT</span>
+        </div>
+      `;
+      assistantCol.appendChild(headerEl);
 
       // 1. Thought Process Accordion (if any)
       if (msg.thoughtProcess && msg.thoughtProcess.trim()) {
@@ -259,8 +270,8 @@ export class MessagesComponent {
       // 3. Search Sources Pill Tray (Rendered cleanly below assistant response)
       if (Array.isArray(msg.searchSources) && msg.searchSources.length > 0) {
         const sourcesTray = document.createElement('div');
-        sourcesTray.className = 'sources-tray pt-2 border-t border-[var(--surface-border)] flex items-center gap-2 flex-wrap text-xs';
-        sourcesTray.innerHTML = `<span class="font-semibold text-[10px] uppercase tracking-wider flex items-center gap-1 text-[var(--text-muted)]">
+        sourcesTray.className = 'sources-tray pt-3 border-t border-[var(--surface-border)] flex items-center gap-2 flex-wrap text-xs';
+        sourcesTray.innerHTML = `<span class="font-semibold text-[10px] uppercase tracking-wider flex items-center gap-1 text-[var(--text-muted)] flex-shrink-0">
           <svg class="w-3.5 h-3.5 text-[var(--accent-blue)]"><use href="#icon-search"/></svg>
           Sources:
         </span>`;
@@ -279,7 +290,7 @@ export class MessagesComponent {
           pill.title = s.title || s.url;
           pill.innerHTML = `
             <span class="w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] flex-shrink-0"></span>
-            ${domain ? `<span class="font-semibold text-[10px] text-[var(--text-muted)]">${escapeHtml(domain)}</span>` : ''}
+            ${domain ? `<span class="font-semibold text-[10px] text-[var(--text-muted)] flex-shrink-0">${escapeHtml(domain)}</span>` : ''}
             <span class="truncate">${escapeHtml(s.title || 'Source')}</span>
             ${s.age ? `<span class="text-[10px] text-[var(--text-muted)] flex-shrink-0">(${escapeHtml(s.age)})</span>` : ''}
           `;
@@ -295,7 +306,7 @@ export class MessagesComponent {
         outputWrapper.className = 'py-execution-output my-3 p-3.5 rounded-xl border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs font-mono';
         let inner = `<div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--surface-border)] font-semibold text-[11px] text-[var(--text-muted)]">
           <span>CODE INTERPRETER OUTPUT</span>
-          <span class="text-emerald-500">Executed</span>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Executed</span>
         </div>`;
         if (msg.executionOutput.stdout) {
           inner += `<pre class="text-[var(--text-primary)] whitespace-pre-wrap mb-2">${escapeHtml(msg.executionOutput.stdout)}</pre>`;
@@ -315,7 +326,7 @@ export class MessagesComponent {
 
       // 5. Assistant hover actions
       const actionsEl = document.createElement('div');
-      actionsEl.className = 'message-actions flex items-center gap-1.5 pt-1 text-[11px]';
+      actionsEl.className = 'message-actions flex items-center gap-1.5 pt-2 border-t border-[var(--surface-border)] text-[11px]';
       actionsEl.innerHTML = `
         <button class="msg-action-btn btn-copy-msg" data-copy-text="${encodeURIComponent(msg.content)}" title="Copy response markdown">
           <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
@@ -415,7 +426,18 @@ export class MessagesComponent {
     wrapper.className = 'message-entry flex gap-3 justify-start';
 
     const assistantCol = document.createElement('div');
-    assistantCol.className = 'w-full max-w-full space-y-3 message-assistant-body';
+    assistantCol.className = 'w-full max-w-full space-y-4 message-assistant-card message-assistant-body';
+
+    // 0. Fixed Output Pill Header for streaming turn
+    const headerEl = document.createElement('div');
+    headerEl.className = 'assistant-card-header flex items-center justify-between pb-1';
+    headerEl.innerHTML = `
+      <div class="output-pill inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-xs font-medium text-[var(--text-secondary)] shadow-sm">
+        <svg class="w-3.5 h-3.5 text-[var(--accent-blue)] animate-spin"><use href="#icon-sparkles"/></svg>
+        <span>AskBOT</span>
+      </div>
+    `;
+    assistantCol.appendChild(headerEl);
 
     // Thinking container placeholder
     const thinkingPlaceholder = document.createElement('div');
@@ -514,6 +536,11 @@ export class MessagesComponent {
         searchingStatus.innerHTML = '';
         searchingStatus.className = 'hidden';
 
+        const sparkIcon = headerEl?.querySelector('svg');
+        if (sparkIcon) {
+          sparkIcon.classList.remove('animate-spin');
+        }
+
         if (hasThought) {
           const elapsedSec = Math.max(1, Math.round((Date.now() - thinkingStartTime) / 1000));
           const acc = thinkingPlaceholder.querySelector('.thought-accordion');
@@ -532,6 +559,22 @@ export class MessagesComponent {
             const chevron = acc.querySelector('.chevron-icon');
             if (chevron) chevron.classList.remove('rotate-180');
           }
+        }
+
+        if (!assistantCol.querySelector('.message-actions') && finalMsg) {
+          const actionsEl = document.createElement('div');
+          actionsEl.className = 'message-actions flex items-center gap-1.5 pt-2 border-t border-[var(--surface-border)] text-[11px]';
+          actionsEl.innerHTML = `
+            <button class="msg-action-btn btn-copy-msg" data-copy-text="${encodeURIComponent(finalMsg.content || '')}" title="Copy response markdown">
+              <svg class="w-3 h-3"><use href="#icon-copy"/></svg>
+              <span>Copy</span>
+            </button>
+            <button class="msg-action-btn btn-regen-msg" data-msg-id="${finalMsg.id}" title="Regenerate this response">
+              <svg class="w-3 h-3"><use href="#icon-refresh"/></svg>
+              <span>Regenerate</span>
+            </button>
+          `;
+          assistantCol.appendChild(actionsEl);
         }
       }
     };

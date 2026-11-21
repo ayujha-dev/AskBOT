@@ -31,7 +31,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <!-- Favicon & Brand Icons -->
-  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="icon" type="image/png" href="assets/logo-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/png" href="assets/logo-light.png" media="(prefers-color-scheme: light)">
   <link rel="apple-touch-icon" href="assets/logo.png">
 
   <!-- Custom CSS -->
@@ -62,7 +63,8 @@
     <!-- Brand Logo Header -->
     <div class="px-3.5 py-3 flex items-center justify-between border-b border-[var(--surface-border)]">
       <div class="flex items-center gap-2.5">
-        <img src="assets/logo.png" alt="AskBOT Logo" class="w-8 h-8 rounded-xl object-cover shadow-sm border border-[var(--surface-border)]">
+        <img src="assets/logo-light.png" alt="AskBOT Logo" class="brand-logo-img w-8 h-8 rounded-xl object-cover shadow-sm border border-[var(--surface-border)] block dark:hidden">
+        <img src="assets/logo-dark.png" alt="AskBOT Logo" class="brand-logo-img w-8 h-8 rounded-xl object-cover shadow-sm border border-[var(--surface-border)] hidden dark:block">
         <div class="flex flex-col">
           <span class="font-bold text-sm tracking-tight text-[var(--text-primary)]">Ask<span class="text-[var(--accent-blue)]">BOT</span></span>
           <span class="text-[10px] text-[var(--text-muted)] leading-none">Multi-Provider AI</span>
@@ -188,7 +190,8 @@
         <!-- Empty State: Dynamic Greeting & Suggestions -->
         <div id="empty-state" class="max-w-2xl mx-auto my-auto flex flex-col justify-center items-center text-center py-8">
           <div class="mb-4 flex flex-col items-center gap-3">
-            <img src="assets/logo.png" alt="AskBOT" class="w-16 h-16 rounded-2xl object-cover shadow-lg border border-[var(--surface-border)] hover:scale-105 transition-transform duration-300">
+            <img src="assets/logo-light.png" alt="AskBOT" class="brand-logo-img w-16 h-16 rounded-2xl object-cover shadow-lg border border-[var(--surface-border)] hover:scale-105 transition-transform duration-300 block dark:hidden">
+            <img src="assets/logo-dark.png" alt="AskBOT" class="brand-logo-img w-16 h-16 rounded-2xl object-cover shadow-lg border border-[var(--surface-border)] hover:scale-105 transition-transform duration-300 hidden dark:block">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--surface-border)] bg-[var(--surface-panel)] text-[11px] text-[var(--text-muted)]">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <span>AskBOT Multi-Provider AI</span>
@@ -411,7 +414,8 @@
   <div id="onboarding-modal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 hidden">
     <div class="modal-card w-full max-w-md rounded-2xl p-6 relative text-[var(--text-primary)]">
       <div class="flex items-center gap-3 mb-4">
-        <img src="assets/logo.png" alt="AskBOT Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md border border-[var(--surface-border)]">
+        <img src="assets/logo-light.png" alt="AskBOT Logo" class="brand-logo-img w-11 h-11 rounded-2xl object-cover shadow-md border border-[var(--surface-border)] block dark:hidden">
+        <img src="assets/logo-dark.png" alt="AskBOT Logo" class="brand-logo-img w-11 h-11 rounded-2xl object-cover shadow-md border border-[var(--surface-border)] hidden dark:block">
         <div>
           <h2 class="text-base font-semibold">Welcome to Ask<span class="text-[var(--accent-blue)]">BOT</span></h2>
           <p class="text-xs text-[var(--text-muted)]">Client-side Multi-Provider AI</p>

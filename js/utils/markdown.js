@@ -49,7 +49,7 @@ export class MarkdownRenderer {
       </button>
     </div>
   </div>
-  <pre class="m-0 p-3.5 overflow-x-auto text-xs leading-relaxed"><code class="hljs ${language}">${highlighted}</code></pre>
+  <pre class="m-0 p-3.5 overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap break-words"><code class="hljs ${language} whitespace-pre-wrap break-words">${highlighted}</code></pre>
 </div>`;
       };
 
